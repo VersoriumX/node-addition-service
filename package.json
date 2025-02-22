@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "repository": "git@github.com:engagement-team-CI/node-addition-service.git",
-  "author": "Roy van de Water <roy.vwater@gmail.com>",
+  "author": "",
   "license": "MIT",
   "scripts": {
     "start": "node index.js",
