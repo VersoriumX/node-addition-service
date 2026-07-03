@@ -1,24 +1,17 @@
-const express = require('express')
-const add = require('./add')
-const { securityMiddleware } = require('./src/security')
-
-const app = express()
-
-// Apply security middleware to all routes
-app.use(securityMiddleware)
-const port = process.env.PORT || 3000
 const express = require('express');
 const path = require('path');
 const add = require('./add');
-const { addToken, getTokenValue } = require('./src/tokenmanager');
+const { addToken, getTokenValue, getAllTokens } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
-const { encrypt, decrypt, generateKeys } = require('./src/encryption');
+const { encrypt, decrypt } = require('./src/encryption');
 const { generateVariations } = require('./src/fuzzer');
+const { electricFence } = require('./src/security');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(electricFence); // Apply Electric Fence Security Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Original legacy route
@@ -30,16 +23,26 @@ app.get('/add', (req, res) => {
 
 // Integrated Mesh APIs
 app.get('/api/tokens', (req, res) => {
-    const { loadTokens } = require('./src/database');
-    res.json(loadTokens());
+    try {
+        const tokens = getAllTokens();
+        const tokenArray = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
+        res.json(tokenArray);
+    } catch (error) {
+        console.error('Error fetching tokens:', error);
+        res.status(500).json({ error: 'Failed to load tokens' });
+    }
 });
 
-app.post('/api/tokens', (req, res) => {
+app.post('/api/tokens', async (req, res) => {
     const { name, value } = req.body;
     try {
-        addToken(name, value);
+        if (!name || value === undefined) {
+            return res.status(400).json({ error: 'Name and value are required' });
+        }
+        await addToken(name, value);
         res.status(201).json({ message: 'Token added successfully' });
     } catch (error) {
+        console.error('Error adding token:', error);
         res.status(400).json({ error: error.message });
     }
 });
@@ -49,7 +52,8 @@ app.get('/api/prices/metals', async (req, res) => {
         const prices = await fetchMetalPrices();
         res.json(prices);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error fetching metal prices:', err);
+        res.status(500).json({ error: 'Failed to fetch metal prices' });
     }
 });
 
@@ -58,7 +62,8 @@ app.get('/api/prices/crypto', async (req, res) => {
         const prices = await fetchCryptoPrices();
         res.json(prices);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error fetching crypto prices:', err);
+        res.status(500).json({ error: 'Failed to fetch crypto prices' });
     }
 });
 
@@ -96,5 +101,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Mesh Service listening at http://localhost:${port}`);
+  console.log(`Mesh Service with Electric Fence listening at http://localhost:${port}`);
 });
