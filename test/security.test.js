@@ -8,7 +8,11 @@ describe('Electric Fence Security', () => {
     before((done) => {
         const { spawn } = require('child_process');
         server = spawn('node', ['index.js'], { env: { ...process.env, PORT: port } });
-        setTimeout(done, 1500);
+        server.stdout.on('data', (data) => {
+            if (data.toString().includes('listening at')) {
+                done();
+            }
+        });
     });
 
     after(() => {
