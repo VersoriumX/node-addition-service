@@ -1,4 +1,3 @@
-// tokenManager.js
 const { loadTokens, saveTokens } = require('./database');
 
 let tokens = loadTokens();
@@ -33,4 +32,8 @@ function deleteToken(name) {
     }
 }
 
-module.exports = { addToken, getTokenValue, updateToken, deleteToken };
+function getAllTokens() {
+    return tokens;
+}
+
+module.exports = { addToken, getTokenValue, updateToken, deleteToken, getAllTokens };

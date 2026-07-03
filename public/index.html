@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VersoriumX Technology Inc - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h2>VersoriumX Technology Inc</h2>
+        <h3>Asset Dashboard</h3>
+
+        <div id="searchContainer">
+            <input type="text" id="searchInput" placeholder="Search for tokens...">
+            <ul id="searchResults"></ul>
+        </div>
+
+        <canvas id="metalChart"></canvas>
+
+        <button id="walletButton">Connect Wallet</button>
+        <div id="walletAddress" style="text-align: center; margin-top: 10px;"></div>
+
+        <div class="links">
+            <a href="https://finance.yahoo.com/quote/AAPL" target="_blank">View Apple Stock</a><br>
+            <a href="https://www.metals-api.com/" target="_blank">Current US Spot Gold Prices</a>
+        </div>
+    </div>
+
+    <script src="js/charts.js"></script>
+    <script src="js/wallet.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

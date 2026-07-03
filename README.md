@@ -43,3 +43,23 @@ Pipeline duration was collected across 10 pipeline runs for all providers.
 |TravisCI      | 81|67| 67| 79| 69| 70| 68| 69| 71| 74|     72|    70|
 
 *\* All times are in seconds*
+
+## VersoriumX Framework
+
+VersoriumX is now integrated as a modular framework within this repository.
+
+### Features
+- **Modular Frontend**: Located in `public/`, with separate JS and CSS.
+- **Robust Backend**: Located in `src/`, featuring a token manager and external API integrations.
+- **Jekyll Landing Page**: A professional front-facing page is available at the root (use Jekyll to build).
+
+### Running the Dashboard
+To run the VersoriumX dashboard:
+1. `npm install`
+2. `node server.js`
+3. Open `http://localhost:3000` in your browser.
+
+### Jekyll Site
+To build the Jekyll site:
+1. Ensure you have Ruby and Jekyll installed.
+2. Run `jekyll build` or `jekyll serve`.

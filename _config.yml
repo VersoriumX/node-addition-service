@@ -1,0 +1,36 @@
+title: VersoriumX Technology Inc
+email: info@versoriumx.com
+description: >- # this means to ignore newlines until "baseurl:"
+  VersoriumX is a modular framework for asset tracking and financial insights.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "https://versoriumx.github.io" # the base hostname & protocol for your site
+github_username: versoriumx
+
+# Build settings
+theme: minima
+plugins:
+  - jekyll-feed
+
+# Exclude from processing.
+# The following items will not be processed, by default.
+# Any item listed under the `exclude` key will be excluded from the Jekyll build.
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - src/
+  - public/
+  - server.js
+  - package.json
+  - yarn.lock
+  - Dockerfile
+  - LICENSE
+  - README.md
+  - SECURITY.md
+  - add-spec.js
+  - add.js
+  - index.js
