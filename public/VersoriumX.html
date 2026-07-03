@@ -89,19 +89,27 @@
     </div>
 
     <script>
-        // Fetch token data from the server
-        async function fetchTokens() {
-            const response = await fetch('/api/tokens');
-            return response.json();
+        let cachedTokens = [];
+
+        // Fetch token data from the server and cache it
+        async function loadTokens() {
+            try {
+                const response = await fetch('/api/tokens');
+                cachedTokens = await response.json();
+            } catch (error) {
+                console.error('Error loading tokens:', error);
+            }
         }
 
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', async (event) => {
+        // Search functionality using cached tokens
+        document.getElementById('searchInput').addEventListener('input', (event) => {
             const query = event.target.value.toLowerCase();
-            const tokens = await fetchTokens();
-            const results = tokens.filter(token => token.name.toLowerCase().includes(query));
+            const results = cachedTokens.filter(token => token.name.toLowerCase().includes(query));
             const resultsList = document.getElementById('searchResults');
             resultsList.innerHTML = '';
+
+            if (query === '') return;
+
             results.forEach(token => {
                 const li = document.createElement('li');
                 li.textContent = `${token.name}: $${token.value}`;
@@ -111,12 +119,11 @@
 
         // Connect wallet functionality
         document.getElementById('walletButton').addEventListener('click', async () => {
-            // Implement wallet connection logic here
             alert('Wallet connection functionality to be implemented.');
         });
 
-        // Initialize charts (similar to previous examples)
-        // ...
+        // Initialize
+        loadTokens();
     </script>
 
 </body>

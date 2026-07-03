@@ -1,14 +1,6 @@
-// tokenManager.js
 const { loadTokens, saveTokens } = require('./database');
 
 let tokens = loadTokens();
-
-/**
- * ⚡ Bolt Optimization:
- * Modification functions now return a promise from the persistence layer.
- * Callers can optionally 'await' these to ensure durability, while
- * the in-memory state remains synchronously updated for immediate consistency.
- */
 
 function addToken(name, value) {
     if (typeof name !== 'string' || typeof value !== 'number') {
@@ -19,11 +11,19 @@ function addToken(name, value) {
 }
 
 function getTokenValue(name) {
-    return tokens[name] || null;
+    if (!name || typeof name !== 'string') return null;
+    return tokens[name] !== undefined ? tokens[name] : null;
+}
+
+function getAllTokens() {
+    return tokens;
 }
 
 function updateToken(name, value) {
-    if (tokens[name]) {
+    if (tokens[name] !== undefined) {
+        if (typeof value !== 'number') {
+            throw new Error('Invalid token value');
+        }
         tokens[name] = value;
         return saveTokens(tokens);
     } else {
@@ -32,7 +32,7 @@ function updateToken(name, value) {
 }
 
 function deleteToken(name) {
-    if (tokens[name]) {
+    if (tokens[name] !== undefined) {
         delete tokens[name];
         return saveTokens(tokens);
     } else {
@@ -40,4 +40,4 @@ function deleteToken(name) {
     }
 }
 
-module.exports = { addToken, getTokenValue, updateToken, deleteToken };
+module.exports = { addToken, getTokenValue, getAllTokens, updateToken, deleteToken };
