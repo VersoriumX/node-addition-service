@@ -11,8 +11,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 // API route to get all tokens
+// API route to get all tokens
 app.get('/api/tokens', (req, res) => {
-    const tokens = getAllTokens();
+    const tokens = getAllTokens() || {};
     const tokenList = Object.keys(tokens).map(name => ({
         name: name,
         value: tokens[name]
