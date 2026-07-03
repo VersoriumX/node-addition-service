@@ -1,6 +1,6 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('../src/tokenmanager');
+const { addToken, getTokenValue, updateToken, deleteToken } = require('./tokenManager');
 
 describe('Token Manager', () => {
     it('should add a token', () => {

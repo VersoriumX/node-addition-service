@@ -1,8 +1,3 @@
-# Bolt's Performance Journal
-
-## 2025-05-14 - Sequential Asynchronous File I/O
-**Learning:** Simply making file I/O asynchronous in Node.js can lead to race conditions and data corruption if multiple writes to the same file are triggered concurrently. This is especially critical for data persistence.
-**Action:** Implement a write queue to ensure that asynchronous writes are performed sequentially. This maintains the non-blocking benefits of async I/O while guaranteeing data integrity.
 ## 2025-05-14 - CI Pipeline Bottlenecks
 **Learning:** In projects designed to compare CI performance, the overhead of dependency installation (cold starts) is often the dominant factor in pipeline duration. Missing caching for `node_modules` or using inefficient package managers (e.g., `npm` instead of `yarn` when a `yarn.lock` is present) significantly inflates build times.
 **Action:** Always check for existing lockfiles (`yarn.lock`, `pnpm-lock.yaml`) and ensure CI configurations use the appropriate package manager and enable dependency caching (e.g., `actions/setup-node`'s `cache` option).
@@ -14,3 +9,7 @@
 ## 2025-05-14 - Active Defense Against ReDoS
 **Learning:** While patching vulnerable libraries is essential, implementing an active defense layer (middleware) can provide immediate protection and visibility into attack attempts. Quarantining IPs that send suspicious payloads (e.g., extremely long strings that could trigger even a "fixed" regex if it's still computationally expensive) prevents repeated attempts.
 **Action:** Use defensive middleware to inspect request parameters and implement an IP-based blocklist for high-risk activity.
+
+## 2025-05-14 - ReDoS in path-to-regexp (VersoriumX)
+**Learning:** ReDoS vulnerabilities in routing libraries like `path-to-regexp` can be particularly dangerous as they are often exposed directly to user input via URL paths. CVE-2024-45296 highlights how certain path patterns (like `/:a-:b`) can trigger catastrophic backtracking.
+**Action:** Always upgrade `path-to-regexp` to at least `0.1.12` and use Yarn `resolutions` to force this across all transitive dependencies (e.g., `express`).

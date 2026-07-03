@@ -1,6 +1,0 @@
-User-agent: *
-Disallow: /api/
-
-# Integrated Services for VersoriumX and Travis Jerome Goff
-# Visit: https://github.com/VersoriumX
-# Credits to Travis Jerome Goff and the VersoriumX Team
