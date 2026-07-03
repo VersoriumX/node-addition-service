@@ -13,9 +13,6 @@ async function fetchWithCache(url, cache, headers = {}) {
 
     try {
         const response = await fetch(url, { headers });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
         const data = await response.json();
         cache.data = data;
         cache.timestamp = now;

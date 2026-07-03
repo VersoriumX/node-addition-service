@@ -1,17 +1,20 @@
-// app.js
-const { addToken, getTokenValue } = require('./tokenManager');
+const { addToken, getTokenValue } = require('./tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./api');
 
 async function main() {
-    // Example usage
-    addToken('EthereumX', 2000);
-    console.log(getTokenValue('EthereumX')); // 2000
+    try {
+        // Example usage
+        await addToken('EthereumX', 2000);
+        console.log('EthereumX Value:', getTokenValue('EthereumX'));
 
-    const metalPrices = await fetchMetalPrices();
-    console.log(metalPrices);
+        const metalPrices = await fetchMetalPrices();
+        console.log('Metal Prices:', metalPrices);
 
-    const cryptoPrices = await fetchCryptoPrices();
-    console.log(cryptoPrices);
+        const cryptoPrices = await fetchCryptoPrices();
+        console.log('Crypto Prices:', cryptoPrices);
+    } catch (error) {
+        console.error('Error in main:', error);
+    }
 }
 
 main();
