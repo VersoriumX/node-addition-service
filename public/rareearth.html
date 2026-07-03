@@ -81,12 +81,10 @@
 
             metalChart.data.datasets.forEach(dataset => {
                 const price = rates[dataset.symbol];
-                if (price !== undefined) {
-                    if (dataset.data.length > 20) {
-                        dataset.data.shift();
-                    }
-                    dataset.data.push(price);
+                if (dataset.data.length > 20) {
+                    dataset.data.shift();
                 }
+                dataset.data.push(price !== undefined ? price : null);
             });
 
             metalChart.update();
