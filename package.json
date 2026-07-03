@@ -15,6 +15,11 @@
     "mocha": "^8.3.0"
   },
   "dependencies": {
+    "ansi-regex": "^5.0.1",
+    "express": "^4.20.0"
+  },
+  "resolutions": {
+    "ansi-regex": "5.0.1"
     "express": "^4.20.0",
     "node-fetch": "^3.3.2",
     "node-rsa": "^2.0.0",
