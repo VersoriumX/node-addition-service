@@ -1,59 +1,57 @@
-// server.js
 const express = require('express');
 const path = require('path');
-const { addToken, getTokenValue } = require('./src/tokenManager');
+const { addToken, getTokenValue, getAllTokens, updateToken, deleteToken } = require('./src/tokenmanager');
 const { securityMiddleware } = require('./src/security');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 
 const app = express();
-
-// Apply security middleware to all routes
-app.use(securityMiddleware);
 const PORT = process.env.PORT || 3000;
 
-// Middleware to serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/api/tokens', (req, res) => {
-    // Assuming the tokenManager stores tokens in an object
-    // and we want to return them as an array for the frontend
-    const { loadTokens } = require('./src/database');
-    const tokens = loadTokens();
-    const tokenArray = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
-    res.json(tokenArray);
-});
-
-app.get('/api/token', (req, res) => {
-    const name = req.query.name;
-    const value = getTokenValue(name);
-    if (value !== null) {
-        res.json({ name, value });
-    } else {
-        res.status(404).json({ error: 'Token not found' });
-    }
-});
-
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Middleware
 app.use(express.json());
+app.use(securityMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API for Tokens
 app.get('/api/tokens', (req, res) => {
-    // In a real app, we might want to list all tokens.
-    // For now, let's return a sample or the whole DB if possible.
-    // Since loadTokens is in database.js, and tokenmanager uses it.
-    const { loadTokens } = require('./src/database');
-    res.json(loadTokens());
+    try {
+        const tokens = getAllTokens();
+        const tokenArray = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
+        res.json(tokenArray);
+    } catch (error) {
+        console.error('Error fetching tokens:', error);
+        res.status(500).json({ error: 'Failed to load tokens' });
+    }
 });
 
-app.post('/api/tokens', (req, res) => {
+app.get('/api/token', (req, res) => {
+    try {
+        const name = req.query.name;
+        if (!name) {
+            return res.status(400).json({ error: 'Token name is required' });
+        }
+        const value = getTokenValue(name);
+        if (value !== null) {
+            res.json({ name, value });
+        } else {
+            res.status(404).json({ error: 'Token not found' });
+        }
+    } catch (error) {
+        console.error('Error fetching token:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/tokens', async (req, res) => {
     const { name, value } = req.body;
     try {
-        addToken(name, value);
+        if (!name || value === undefined) {
+            return res.status(400).json({ error: 'Name and value are required' });
+        }
+        await addToken(name, value);
         res.status(201).json({ message: 'Token added successfully' });
     } catch (error) {
+        console.error('Error adding token:', error);
         res.status(400).json({ error: error.message });
     }
 });
@@ -64,7 +62,8 @@ app.get('/api/prices/metals', async (req, res) => {
         const prices = await fetchMetalPrices();
         res.json(prices);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error fetching metal prices:', err);
+        res.status(500).json({ error: 'Failed to fetch metal prices' });
     }
 });
 
@@ -73,7 +72,8 @@ app.get('/api/prices/crypto', async (req, res) => {
         const prices = await fetchCryptoPrices();
         res.json(prices);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error fetching crypto prices:', err);
+        res.status(500).json({ error: 'Failed to fetch crypto prices' });
     }
 });
 
@@ -86,6 +86,11 @@ Disallow: /api/
 # Visit: https://github.com/VersoriumX
 # Credits to Travis Jerome Goff and the VersoriumX Team
 `);
+});
+
+// Default fallback for API routes
+app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint not found' });
 });
 
 app.listen(PORT, () => {
