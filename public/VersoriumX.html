@@ -95,7 +95,15 @@
         async function loadTokens() {
             try {
                 const response = await fetch('/api/tokens');
-                cachedTokens = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    cachedTokens = data;
+                } else {
+                    console.error('Expected an array of tokens, but received:', data);
+                }
             } catch (error) {
                 console.error('Error loading tokens:', error);
             }
