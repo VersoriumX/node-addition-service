@@ -10,9 +10,9 @@ stages:
 
 test:
   stage: test
-  image: node:lts-alpine
+  image: node:lts
   script:
-  - yarn install --frozen-lockfile
+  - npm install
   - yarn test
 
 deploy:
