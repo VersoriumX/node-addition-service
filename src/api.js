@@ -34,8 +34,6 @@ async function fetchMetalPrices() {
 
 async function fetchCryptoPrices() {
     const url = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,ETH&CMC_PRO_API_KEY=${config.cryptoApiKey}`;
-    // CMC API usually prefers the key in header, but keeping it in URL if that's what was used.
-    // However, the original code had it in URL.
     return fetchWithCache(url, cryptoCache);
 }
 

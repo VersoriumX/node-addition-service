@@ -1,48 +1,72 @@
-const { describe, it } = require('mocha');
+const { describe, it, beforeEach } = require('mocha');
 const { expect } = require('chai');
-const { securityMiddleware, quarantinedIPs } = require('../src/security');
+const { electricFence, quarantinedIPs } = require('../src/security');
 
-describe('Security Middleware', () => {
+describe('Electric Fence Security Middleware', () => {
+    beforeEach(() => {
+        quarantinedIPs.clear();
+    });
+
     it('should allow normal requests', (done) => {
-        const req = { query: { a: '1', b: '2' }, ip: '1.2.3.4' };
+        const req = { query: { a: '1', b: '2' }, body: {}, ip: '1.2.3.4' };
         const res = {};
         const next = () => {
             expect(quarantinedIPs.has('1.2.3.4')).to.be.false;
             done();
         };
-        securityMiddleware(req, res, next);
+        electricFence(req, res, next);
     });
 
-    it('should quarantine and block suspicious requests', () => {
+    it('should quarantine and block suspicious requests (long string)', () => {
         const longString = 'a'.repeat(1001);
-        const req = { query: { a: longString }, ip: '6.6.6.6' };
+        const req = { query: { a: longString }, body: {}, ip: '6.6.6.6' };
         let statusSet = 0;
-        let sentMessage = '';
+        let jsonSent = null;
         const res = {
             status: (s) => { statusSet = s; return res; },
-            send: (m) => { sentMessage = m; }
+            json: (m) => { jsonSent = m; }
         };
         const next = () => { throw new Error('Next should not be called'); };
 
-        securityMiddleware(req, res, next);
+        electricFence(req, res, next);
 
         expect(statusSet).to.equal(403);
-        expect(sentMessage).to.contain('Suspicious activity');
+        expect(jsonSent.error).to.contain('Security Violation');
         expect(quarantinedIPs.has('6.6.6.6')).to.be.true;
+    });
+
+    it('should quarantine and block suspicious requests (globstar pattern)', () => {
+        const suspiciousPattern = '**/**/**';
+        const req = { query: { path: suspiciousPattern }, body: {}, ip: '7.7.7.7' };
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: (m) => { jsonSent = m; }
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        expect(jsonSent.error).to.contain('Security Violation');
+        expect(quarantinedIPs.has('7.7.7.7')).to.be.true;
     });
 
     it('should continue to block quarantined IPs', () => {
         quarantinedIPs.add('9.9.9.9');
-        const req = { query: { a: '1' }, ip: '9.9.9.9' };
+        const req = { query: { a: '1' }, body: {}, ip: '9.9.9.9' };
         let statusSet = 0;
+        let jsonSent = null;
         const res = {
             status: (s) => { statusSet = s; return res; },
-            send: (m) => {}
+            json: (m) => { jsonSent = m; }
         };
         const next = () => { throw new Error('Next should not be called'); };
 
-        securityMiddleware(req, res, next);
+        electricFence(req, res, next);
 
         expect(statusSet).to.equal(403);
+        expect(jsonSent.error).to.contain('Access Denied');
     });
 });

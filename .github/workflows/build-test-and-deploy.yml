@@ -5,9 +5,9 @@ name: build-test-and-deploy
 
 on:
   push:
-    branches: [ N-O-S ]
+    branches: [ N-O-S, main, feature/integrate-services-and-security-14671577831673556526 ]
   pull_request:
-    branches: [ N-O-S ]
+    branches: [ N-O-S, main ]
 
 jobs:
   build-and-test:
