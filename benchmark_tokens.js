@@ -19,5 +19,5 @@ console.log('--- Benchmarking Token Retrieval ---');
 const diskTime = benchmark(() => loadTokens(), 'Disk-based (loadTokens)');
 const memoryTime = benchmark(() => getAllTokens(), 'Memory-cached (getAllTokens)');
 
-const improvement = ((diskTime - memoryTime) / diskTime * 100).toFixed(2);
+const improvement = diskTime > 0 ? ((diskTime - memoryTime) / diskTime * 100).toFixed(2) : '0.00';
 console.log(`\nPerformance Gain: ${improvement}% faster`);
