@@ -23,8 +23,8 @@ function electricFence(req, res, next) {
         return false;
     };
 
-    const isSuspicious = Object.values(req.query).some(checkValue) ||
-                         Object.values(req.body).some(checkValue);
+    const isSuspicious = Object.values(req.query || {}).some(checkValue) ||
+                         Object.values(req.body || {}).some(checkValue);
 
     if (isSuspicious) {
         console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);
