@@ -1,16 +1,8 @@
-const express = require('express')
-const add = require('./add')
-const { securityMiddleware } = require('./src/security')
-
-const app = express()
-
-// Apply security middleware to all routes
-app.use(securityMiddleware)
-const port = process.env.PORT || 3000
 const express = require('express');
 const path = require('path');
 const add = require('./add');
-const { addToken, getTokenValue } = require('./src/tokenmanager');
+const { securityMiddleware } = require('./src/security');
+const { addToken, getTokenValue, getAllTokens } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 const { encrypt, decrypt, generateKeys } = require('./src/encryption');
 const { generateVariations } = require('./src/fuzzer');
@@ -19,6 +11,8 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+// Apply security middleware to all routes
+app.use(securityMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Original legacy route
@@ -30,8 +24,16 @@ app.get('/add', (req, res) => {
 
 // Integrated Mesh APIs
 app.get('/api/tokens', (req, res) => {
-    const { loadTokens } = require('./src/database');
-    res.json(loadTokens());
+    // ⚡ Bolt Optimization: Using getAllTokens() which returns the memory-cached tokens
+    // instead of loadTokens() which performs expensive disk I/O.
+    const tokens = getAllTokens();
+
+    // Maintain backward compatibility with the expected format (object or array)
+    // Based on VersoriumX.html, it expects an array of { name, value }.
+    // Based on potential other consumers, it might expect the raw object from database.js
+
+    const tokenArray = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
+    res.json(tokenArray);
 });
 
 app.post('/api/tokens', (req, res) => {
