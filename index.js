@@ -24,7 +24,7 @@ app.get('/add', (req, res) => {
 // Integrated Mesh APIs
 app.get('/api/tokens', (req, res) => {
     try {
-        const tokens = getAllTokens();
+        const tokens = getAllTokens() || {};
         const tokenArray = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
         res.json(tokenArray);
     } catch (error) {
