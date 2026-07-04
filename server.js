@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
-const { addToken, getTokenValue, getAllTokens, updateToken, deleteToken } = require('./src/tokenmanager');
-const { securityMiddleware } = require('./src/security');
+const { addToken, getAllTokens } = require('./src/tokenmanager');
+const { electricFence } = require('./src/security');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 
 const app = express();
@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(securityMiddleware);
+app.use(electricFence);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API for Tokens
@@ -21,24 +21,6 @@ app.get('/api/tokens', (req, res) => {
     } catch (error) {
         console.error('Error fetching tokens:', error);
         res.status(500).json({ error: 'Failed to load tokens' });
-    }
-});
-
-app.get('/api/token', (req, res) => {
-    try {
-        const name = req.query.name;
-        if (!name) {
-            return res.status(400).json({ error: 'Token name is required' });
-        }
-        const value = getTokenValue(name);
-        if (value !== null) {
-            res.json({ name, value });
-        } else {
-            res.status(404).json({ error: 'Token not found' });
-        }
-    } catch (error) {
-        console.error('Error fetching token:', error);
-        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
