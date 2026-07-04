@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('path');
 const add = require('./add');
+const { securityMiddleware } = require('./src/security');
+const { addToken, getAllTokens } = require('./src/tokenmanager');
 const { addToken, getTokenValue, getAllTokens } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 const { encrypt, decrypt } = require('./src/encryption');
@@ -14,6 +16,8 @@ const port = process.env.PORT || 3000;
 // Apply security middleware to all routes
 app.use(securityMiddleware);
 app.use(express.json());
+// Apply security middleware to all routes
+app.use(securityMiddleware);
 app.use(electricFence); // Apply Electric Fence Security Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -31,6 +35,16 @@ app.get('/add', (req, res) => {
  * Also maps to array format for frontend compatibility.
  */
 app.get('/api/tokens', (req, res) => {
+    // ⚡ Bolt Optimization: Using getAllTokens() which returns the memory-cached tokens
+    // instead of loadTokens() which performs expensive disk I/O.
+    const tokens = getAllTokens();
+
+    // Maintain backward compatibility with the expected format (object or array)
+    // Based on VersoriumX.html, it expects an array of { name, value }.
+    // Based on potential other consumers, it might expect the raw object from database.js
+
+    const tokenArray = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
+    res.json(tokenArray);
     try {
         const tokens = getAllTokens() || {};
         const tokens = getAllTokens();
