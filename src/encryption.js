@@ -1,7 +1,12 @@
 const NodeRSA = require('node-rsa');
 const RSA = NodeRSA.NodeRSA || NodeRSA;
 
-const key = new RSA({ b: 512 }); // Small key for demo purposes
+/**
+ * 🛡️ Sentinel Security Enhancement:
+ * Increased RSA key size to 2048 bits to meet modern security standards (NIST).
+ * 512-bit keys are considered insecure and susceptible to factoring attacks.
+ */
+const key = new RSA({ b: 2048 });
 
 function generateKeys() {
     return {
