@@ -14,7 +14,9 @@ let tokens = Object.assign(Object.create(null), loadTokens());
 let tokensArrayCache = null;
 
 function updateCache() {
-    tokensArrayCache = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
+    tokensArrayCache = Object.freeze(
+        Object.keys(tokens).map(name => Object.freeze({ name, value: tokens[name] }))
+    );
 }
 
 // Initial cache population
