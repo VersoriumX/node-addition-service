@@ -9,14 +9,16 @@ let tokens = Object.assign(Object.create(null), loadTokens());
 
 /**
  * ⚡ Bolt Optimization:
- * In-memory cache for tokens in array format to avoid repeated Object.keys().map() calls.
+ * In-memory cache for tokens in array format and JSON string to avoid
+ * repeated O(n) mapping and serialization on every API request.
  */
 let tokensArrayCache = null;
+let tokensJSONCache = null;
 
 function updateCache() {
-    tokensArrayCache = Object.freeze(
-        Object.keys(tokens).map(name => Object.freeze({ name, value: tokens[name] }))
-    );
+    const arr = Object.keys(tokens).map(name => Object.freeze({ name, value: tokens[name] }));
+    tokensArrayCache = Object.freeze(arr);
+    tokensJSONCache = JSON.stringify(arr);
 }
 
 // Initial cache population
@@ -55,6 +57,15 @@ function getAllTokensArray() {
     return tokensArrayCache;
 }
 
+/**
+ * ⚡ Bolt Optimization:
+ * Returns the pre-serialized JSON string of the tokens array.
+ */
+function getAllTokensJSON() {
+    if (tokensJSONCache === null) updateCache();
+    return tokensJSONCache;
+}
+
 function updateToken(name, value) {
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
@@ -84,4 +95,4 @@ function deleteToken(name) {
     }
 }
 
-module.exports = { addToken, getTokenValue, getAllTokens, getAllTokensArray, updateToken, deleteToken };
+module.exports = { addToken, getTokenValue, getAllTokens, getAllTokensArray, getAllTokensJSON, updateToken, deleteToken };
