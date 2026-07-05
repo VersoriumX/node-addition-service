@@ -18,3 +18,7 @@
 ## 2025-05-14 - External API Caching & Frontend Search Optimization
 **Learning:** High-frequency external API calls can lead to rate-limiting and performance degradation. Similarly, fetching large datasets on every frontend interaction (like keystrokes in search) creates unnecessary network overhead.
 **Action:** Implement in-memory caching for external API responses with short TTLs. On the frontend, fetch and cache the initial dataset on page load to allow for near-instant search results without repetitive network requests.
+
+## 2026-07-05 - Pre-serialized JSON Caching
+**Learning:** In read-heavy APIs returning JSON arrays, `JSON.stringify()` can become a bottleneck even if the underlying data is already cached in memory. Pre-serializing the data into a JSON string and serving it directly avoids the O(n) serialization cost on every request.
+**Action:** Pre-calculate and cache the JSON string representation of frequently requested datasets whenever the data changes, and serve it using `res.send()` with the appropriate content-type header.
