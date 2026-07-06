@@ -22,3 +22,7 @@
 ## 2026-07-05 - Pre-serialized JSON Caching
 **Learning:** In read-heavy APIs returning JSON arrays, `JSON.stringify()` can become a bottleneck even if the underlying data is already cached in memory. Pre-serializing the data into a JSON string and serving it directly avoids the O(n) serialization cost on every request.
 **Action:** Pre-calculate and cache the JSON string representation of frequently requested datasets whenever the data changes, and serve it using `res.send()` with the appropriate content-type header.
+
+## 2026-07-06 - Request Coalescing (Thundering Herd Defense)
+**Learning:** Simple time-based caching is vulnerable to the "Thundering Herd" problem, where multiple concurrent requests for an expired or missing resource trigger redundant network calls simultaneously. This wastes bandwidth and risks rate-limiting from external APIs.
+**Action:** Implement request coalescing by tracking ongoing requests in a `Map` of promises. Concurrent calls for the same resource should await the existing promise instead of initiating new ones.
