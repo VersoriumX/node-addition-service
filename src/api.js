@@ -18,6 +18,21 @@ async function fetchWithCache(url, cache, headers = {}) {
         return cache.data;
     }
 
+    try {
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        cache.data = data;
+        cache.timestamp = now;
+        return data;
+    } catch (error) {
+        // 🛡️ Sentinel: Redact sensitive API keys from URL before logging to prevent data leakage.
+        const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY)=[^&]+/g, '$1=[REDACTED]');
+        console.error(`Error fetching from ${redactedUrl}:`, error);
+        if (cache.data) return cache.data; // Return stale data on error
+        throw error;
     // ⚡ Bolt Optimization: If there's already an in-flight request for this URL, join it.
     if (pendingPromises.has(url)) {
         return pendingPromises.get(url);
