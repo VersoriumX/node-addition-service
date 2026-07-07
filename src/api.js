@@ -34,7 +34,13 @@ async function fetchWithCache(url, cache, headers = {}) {
             cache.timestamp = now;
             return data;
         } catch (error) {
-            console.error(`Error fetching from ${url}:`, error);
+            /**
+             * 🛡️ Sentinel Security Enhancement:
+             * Redact sensitive query parameters from URLs in error logs to prevent credential leakage.
+             * We log only the error message to avoid potential secret leakage via the full error object properties.
+             */
+            const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY)=([^&]+)/g, '$1=[REDACTED]');
+            console.error(`Error fetching from ${redactedUrl}: ${error.message}`);
             if (cache.data) return cache.data; // Return stale data on error
             throw error;
         } finally {
