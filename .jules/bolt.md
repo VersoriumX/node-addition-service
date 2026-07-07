@@ -22,3 +22,11 @@
 ## 2026-07-05 - Pre-serialized JSON Caching
 **Learning:** In read-heavy APIs returning JSON arrays, `JSON.stringify()` can become a bottleneck even if the underlying data is already cached in memory. Pre-serializing the data into a JSON string and serving it directly avoids the O(n) serialization cost on every request.
 **Action:** Pre-calculate and cache the JSON string representation of frequently requested datasets whenever the data changes, and serve it using `res.send()` with the appropriate content-type header.
+
+## 2026-07-05 - Request Coalescing to prevent Thundering Herd
+**Learning:** Concurrent requests for the same uncached resource can lead to redundant network calls or expensive operations, a phenomenon known as the "Thundering Herd" problem.
+**Action:** Implement request coalescing by storing in-flight promises in a Map. Subsequent concurrent requests for the same resource should await the existing promise instead of initiating a new one. Ensure promises are removed from the Map once they settle to prevent memory leaks.
+
+## 2024-05-22 - Pre-calculated ETag Caching
+**Learning:** Even with pre-serialized JSON, Express (and underlying engines) will still perform a cryptographic hash of the response body to generate an ETag on every request. This is O(n) relative to body size. Pre-calculating the ETag whenever the data changes and serving it directly avoids this overhead.
+**Action:** Store a pre-calculated ETag (e.g., MD5 hash) alongside cached data. In the route handler, manually check the 'If-None-Match' header against this cached ETag and return a 304 Not Modified response early to bypass serialization and data transfer. Ensure the 304 response still includes the ETag header for RFC 7232 compliance.
