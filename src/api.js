@@ -26,7 +26,7 @@ async function fetchWithCache(url, cache, headers = {}) {
 
     const fetchPromise = (async () => {
         try {
-            const response = await fetch(url, { headers });
+            const response = await fetch(url, { headers, timeout: 15000 });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
