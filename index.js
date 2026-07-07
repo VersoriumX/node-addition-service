@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const add = require('./add');
-const { addToken, getAllTokensJSON } = require('./src/tokenmanager');
+const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 const { encrypt, decrypt } = require('./src/encryption');
 const { generateVariations } = require('./src/fuzzer');
@@ -25,12 +25,24 @@ app.get('/add', (req, res) => {
  * ⚡ Bolt Optimization:
  * Replaced Object.keys().map() and JSON.stringify() with a pre-calculated memory-cached JSON string.
  * Performance gain: ~99% reduction in API response generation time compared to original O(n) mapping.
+ * Added pre-calculated ETag to further avoid redundant hashing on every request.
  */
 app.get('/api/tokens', (req, res) => {
     try {
+        const etag = getAllTokensETag();
+
+        // Check for conditional request
+        if (req.headers['if-none-match'] === etag) {
+            // RFC 7232: 304 response should include the ETag
+            return res.set('ETag', etag).status(304).end();
+        }
+
         // ⚡ Bolt Optimization: Using getAllTokensJSON() which returns a pre-serialized
         // in-memory JSON string, avoiding both O(n) mapping and serialization on every request.
-        res.set('Content-Type', 'application/json').send(getAllTokensJSON());
+        res.set({
+            'Content-Type': 'application/json',
+            'ETag': etag
+        }).send(getAllTokensJSON());
     } catch (error) {
         console.error('Error fetching tokens:', error);
         res.status(500).json({ error: 'Failed to load tokens' });
