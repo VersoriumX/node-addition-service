@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { loadTokens, saveTokens } = require('./database');
 
 /**
@@ -14,11 +15,15 @@ let tokens = Object.assign(Object.create(null), loadTokens());
  */
 let tokensArrayCache = null;
 let tokensJSONCache = null;
+let tokensETagCache = null;
 
 function updateCache() {
     const arr = Object.keys(tokens).map(name => Object.freeze({ name, value: tokens[name] }));
     tokensArrayCache = Object.freeze(arr);
     tokensJSONCache = JSON.stringify(arr);
+    // ⚡ Bolt Optimization: Pre-calculate ETag to avoid hashing on every request.
+    // We use MD5 as it is fast and sufficient for ETag purposes.
+    tokensETagCache = `"${crypto.createHash('md5').update(tokensJSONCache).digest('hex')}"`;
 }
 
 // Initial cache population
@@ -66,6 +71,15 @@ function getAllTokensJSON() {
     return tokensJSONCache;
 }
 
+/**
+ * ⚡ Bolt Optimization:
+ * Returns the pre-calculated ETag for the tokens JSON.
+ */
+function getAllTokensETag() {
+    if (tokensETagCache === null) updateCache();
+    return tokensETagCache;
+}
+
 function updateToken(name, value) {
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
@@ -95,4 +109,4 @@ function deleteToken(name) {
     }
 }
 
-module.exports = { addToken, getTokenValue, getAllTokens, getAllTokensArray, getAllTokensJSON, updateToken, deleteToken };
+module.exports = { addToken, getTokenValue, getAllTokens, getAllTokensArray, getAllTokensJSON, getAllTokensETag, updateToken, deleteToken };
