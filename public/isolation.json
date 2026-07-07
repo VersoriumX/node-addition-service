@@ -1,0 +1,14 @@
+{
+  "operation": "node_isolation",
+  "target": {
+    "address": "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+    "chain": "EVM",
+    "status": "blacklisted"
+  },
+  "security_parameters": {
+    "protocol": "Zero-Trust Airgap",
+    "stream_status": "Severed",
+    "signal_decoupling": true
+  },
+  "timestamp": "2026-07-05T21:27:39Z"
+}

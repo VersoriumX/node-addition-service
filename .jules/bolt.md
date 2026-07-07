@@ -26,3 +26,6 @@
 ## 2026-07-10 - Request Coalescing (Thundering Herd)
 **Learning:** When multiple concurrent requests for the same expired or missing resource arrive at once, they can trigger redundant network calls or expensive operations, overwhelming downstream services.
 **Action:** Implement request coalescing by storing and returning the same pending promise for all concurrent callers while a fetch is in-flight. Ensure the promise is cleared in a `finally` block to allow subsequent fetches after completion.
+## 2026-07-05 - Request Coalescing to prevent Thundering Herd
+**Learning:** Concurrent requests for the same uncached resource can lead to redundant network calls or expensive operations, a phenomenon known as the "Thundering Herd" problem.
+**Action:** Implement request coalescing by storing in-flight promises in a Map. Subsequent concurrent requests for the same resource should await the existing promise instead of initiating a new one. Ensure promises are removed from the Map once they settle to prevent memory leaks.
