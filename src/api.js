@@ -5,26 +5,46 @@ const CACHE_DURATION = 60 * 1000; // 1 minute cache
 let metalCache = { data: null, timestamp: 0 };
 let cryptoCache = { data: null, timestamp: 0 };
 
+/**
+ * ⚡ Bolt Optimization: Request Coalescing (Promise Memoization)
+ * This Map stores in-flight promises for specific URLs to prevent the "Thundering Herd" problem.
+ * Concurrent requests for the same resource will await the same promise instead of triggering multiple network calls.
+ */
+const pendingPromises = new Map();
+
 async function fetchWithCache(url, cache, headers = {}) {
     const now = Date.now();
     if (cache.data && (now - cache.timestamp < CACHE_DURATION)) {
         return cache.data;
     }
 
-    try {
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        cache.data = data;
-        cache.timestamp = now;
-        return data;
-    } catch (error) {
-        console.error(`Error fetching from ${url}:`, error);
-        if (cache.data) return cache.data; // Return stale data on error
-        throw error;
+    // ⚡ Bolt Optimization: If there's already an in-flight request for this URL, join it.
+    if (pendingPromises.has(url)) {
+        return pendingPromises.get(url);
     }
+
+    const fetchPromise = (async () => {
+        try {
+            const response = await fetch(url, { headers });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            cache.data = data;
+            cache.timestamp = now;
+            return data;
+        } catch (error) {
+            console.error(`Error fetching from ${url}:`, error);
+            if (cache.data) return cache.data; // Return stale data on error
+            throw error;
+        } finally {
+            // Remove from pending once settled
+            pendingPromises.delete(url);
+        }
+    })();
+
+    pendingPromises.set(url, fetchPromise);
+    return fetchPromise;
 }
 
 async function fetchMetalPrices() {
