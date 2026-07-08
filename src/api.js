@@ -10,8 +10,6 @@ let cryptoCache = { data: null, timestamp: 0 };
  * This map tracks ongoing requests by URL to prevent the 'Thundering Herd' problem.
  * Concurrent requests for the same resource will await the same promise instead
  * of triggering multiple redundant network calls.
- * This Map stores in-flight promises for specific URLs to prevent the "Thundering Herd" problem.
- * Concurrent requests for the same resource will await the same promise instead of triggering multiple network calls.
  */
 const pendingPromises = new Map();
 
@@ -21,22 +19,6 @@ async function fetchWithCache(url, cache, headers = {}) {
         return cache.data;
     }
 
-    // ⚡ Bolt Optimization: Check if a request for this URL is already in flight
-    try {
-        const response = await fetch(url, { headers });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        cache.data = data;
-        cache.timestamp = now;
-        return data;
-    } catch (error) {
-        // 🛡️ Sentinel: Redact sensitive API keys from URL before logging to prevent data leakage.
-        const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY)=[^&]+/g, '$1=[REDACTED]');
-        console.error(`Error fetching from ${redactedUrl}:`, error);
-        if (cache.data) return cache.data; // Return stale data on error
-        throw error;
     // ⚡ Bolt Optimization: If there's already an in-flight request for this URL, join it.
     if (pendingPromises.has(url)) {
         return pendingPromises.get(url);
@@ -45,26 +27,12 @@ async function fetchWithCache(url, cache, headers = {}) {
     const fetchPromise = (async () => {
         try {
             const response = await fetch(url, { headers, timeout: 15000 });
-            const response = await fetch(url, { headers });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
             cache.data = data;
             cache.timestamp = Date.now();
-            return data;
-        } catch (error) {
-            // 🛡️ Sentinel Security Improvement: Redact sensitive API keys from logs
-            const redactedUrl = url
-                .replace(/access_key=[^&]*/g, 'access_key=REDACTED')
-                .replace(/CMC_PRO_API_KEY=[^&]*/g, 'CMC_PRO_API_KEY=REDACTED');
-
-            console.error(`Error fetching from ${redactedUrl}:`, error);
-            if (cache.data) return cache.data; // Return stale data on error
-            throw error;
-        } finally {
-            // Clean up the pending promise once it's settled
-            cache.timestamp = now;
             return data;
         } catch (error) {
             /**
