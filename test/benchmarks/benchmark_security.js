@@ -4,7 +4,8 @@ const { performance } = require('perf_hooks');
 const ITERATIONS = 100000;
 
 function benchmark(name, req) {
-    quarantinedIPs.clear();
+    const originalWarn = console.warn;
+    console.warn = () => {};
     const res = {
         status: () => res,
         json: () => res
@@ -13,9 +14,11 @@ function benchmark(name, req) {
 
     const start = performance.now();
     for (let i = 0; i < ITERATIONS; i++) {
+        quarantinedIPs.clear();
         electricFence(req, res, next);
     }
     const end = performance.now();
+    console.warn = originalWarn;
     console.log(`${name}: ${(end - start).toFixed(4)}ms for ${ITERATIONS} iterations`);
     return end - start;
 }
