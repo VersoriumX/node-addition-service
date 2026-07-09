@@ -41,7 +41,7 @@ function checkObject(obj) {
 }
 
 function electricFence(req, res, next) {
-    const ip = req.ip || (req.connection && req.connection.remoteAddress);
+    const ip = req.ip || (req.socket && req.socket.remoteAddress);
 
     if (quarantinedIPs.has(ip)) {
         return res.status(403).json({ error: "Access Denied: IP Quarantined." });
