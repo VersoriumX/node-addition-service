@@ -7,6 +7,9 @@ let cryptoCache = { data: null, timestamp: 0 };
 
 /**
  * ⚡ Bolt Optimization: Request Coalescing (Promise Memoization)
+ * This map tracks ongoing requests by URL to prevent the 'Thundering Herd' problem.
+ * Concurrent requests for the same resource will await the same promise instead
+ * of triggering multiple redundant network calls.
  * This Map stores in-flight promises for specific URLs to prevent the "Thundering Herd" problem.
  * Concurrent requests for the same resource will await the same promise instead of triggering multiple network calls.
  */

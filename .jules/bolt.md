@@ -34,6 +34,9 @@
 **Learning:** Even with pre-serialized JSON, Express (and underlying engines) will still perform a cryptographic hash of the response body to generate an ETag on every request. This is O(n) relative to body size. Pre-calculating the ETag whenever the data changes and serving it directly avoids this overhead.
 **Action:** Store a pre-calculated ETag (e.g., MD5 hash) alongside cached data. In the route handler, manually check the 'If-None-Match' header against this cached ETag and return a 304 Not Modified response early to bypass serialization and data transfer. Ensure the 304 response still includes the ETag header for RFC 7232 compliance.
 
+## 2026-07-08 - Manual Object Traversal vs Object.values()
+**Learning:** In hot paths like security middleware that run on every request, using `Object.values().some()` introduces unnecessary memory pressure by allocating an array of all object values. A manual `for...in` loop with `hasOwnProperty` check allows for early short-circuiting without any extra allocations.
+**Action:** Use manual loops or `for...in` for object traversal in performance-critical middleware to minimize GC overhead.
 ## 2025-05-14 - Middleware Performance and Allocation Reduction
 **Learning:** Middleware functions that run on every request (like security filters) can become major bottlenecks if they perform unnecessary allocations (e.g., `Object.values()`) or redeclare helper functions. In Node.js, manual `for...in` loops and hoisting helpers outside the request handler significantly reduce GC pressure and execution time.
 **Action:** Always hoist helper functions outside of Express middleware. Use manual loops instead of higher-order array methods if the object being iterated is large or if the middleware is on a hot path.
