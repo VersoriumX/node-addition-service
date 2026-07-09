@@ -10,6 +10,8 @@ let cryptoCache = { data: null, timestamp: 0 };
  * This map tracks ongoing requests by URL to prevent the 'Thundering Herd' problem.
  * Concurrent requests for the same resource will await the same promise instead
  * of triggering multiple redundant network calls.
+ * This Map stores in-flight promises for specific URLs to prevent the "Thundering Herd" problem.
+ * Concurrent requests for the same resource will await the same promise instead of triggering multiple network calls.
  */
 const pendingPromises = new Map();
 
@@ -40,12 +42,13 @@ async function fetchWithCache(url, cache, headers = {}) {
              * Redact sensitive query parameters from URLs in error logs to prevent credential leakage.
              * We log only the error message to avoid potential secret leakage via the full error object properties.
              */
-            const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY)=([^&]+)/g, '$1=[REDACTED]');
+            const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY)=[^&]+/g, '$1=[REDACTED]');
             console.error(`Error fetching from ${redactedUrl}: ${error.message}`);
+
             if (cache.data) return cache.data; // Return stale data on error
             throw error;
         } finally {
-            // Remove from pending once settled
+            // Clean up the pending promise once it's settled
             pendingPromises.delete(url);
         }
     })();

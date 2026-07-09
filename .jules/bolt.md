@@ -37,3 +37,6 @@
 ## 2026-07-08 - Manual Object Traversal vs Object.values()
 **Learning:** In hot paths like security middleware that run on every request, using `Object.values().some()` introduces unnecessary memory pressure by allocating an array of all object values. A manual `for...in` loop with `hasOwnProperty` check allows for early short-circuiting without any extra allocations.
 **Action:** Use manual loops or `for...in` for object traversal in performance-critical middleware to minimize GC overhead.
+## 2025-05-14 - Middleware Performance and Allocation Reduction
+**Learning:** Middleware functions that run on every request (like security filters) can become major bottlenecks if they perform unnecessary allocations (e.g., `Object.values()`) or redeclare helper functions. In Node.js, manual `for...in` loops and hoisting helpers outside the request handler significantly reduce GC pressure and execution time.
+**Action:** Always hoist helper functions outside of Express middleware. Use manual loops instead of higher-order array methods if the object being iterated is large or if the middleware is on a hot path.
