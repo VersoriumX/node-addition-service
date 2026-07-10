@@ -1,9 +1,10 @@
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 const config = require('./config');
 
 const CACHE_DURATION = 60 * 1000; // 1 minute cache
-let metalCache = { data: null, timestamp: 0 };
-let cryptoCache = { data: null, timestamp: 0 };
+let metalCache = { data: null, json: null, etag: null, timestamp: 0 };
+let cryptoCache = { data: null, json: null, etag: null, timestamp: 0 };
 
 /**
  * ⚡ Bolt Optimization: Request Coalescing (Promise Memoization)
@@ -30,7 +31,15 @@ async function fetchWithCache(url, cache, headers = {}) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+
+            // ⚡ Bolt Optimization: Pre-calculate and cache JSON and ETag to avoid redundant
+            // serialization and hashing on every API request.
+            const json = JSON.stringify(data);
+            const etag = `"${crypto.createHash('md5').update(json).digest('hex')}"`;
+
             cache.data = data;
+            cache.json = json;
+            cache.etag = etag;
             cache.timestamp = Date.now();
             return data;
         } catch (error) {
@@ -64,4 +73,23 @@ async function fetchCryptoPrices() {
     return fetchWithCache(url, cryptoCache);
 }
 
-module.exports = { fetchMetalPrices, fetchCryptoPrices };
+/**
+ * ⚡ Bolt Optimization: Export full cache objects to allow routes to serve
+ * pre-serialized JSON and handle ETags directly.
+ */
+async function fetchMetalPricesFull() {
+    await fetchMetalPrices();
+    return metalCache;
+}
+
+async function fetchCryptoPricesFull() {
+    await fetchCryptoPrices();
+    return cryptoCache;
+}
+
+module.exports = {
+    fetchMetalPrices,
+    fetchCryptoPrices,
+    fetchMetalPricesFull,
+    fetchCryptoPricesFull
+};

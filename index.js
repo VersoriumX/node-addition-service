@@ -2,7 +2,10 @@ const express = require('express');
 const path = require('path');
 const add = require('./add');
 const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenmanager');
-const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
+const {
+    fetchMetalPricesFull,
+    fetchCryptoPricesFull
+} = require('./src/api');
 const { encrypt, decrypt } = require('./src/encryption');
 const { generateVariations } = require('./src/fuzzer');
 const { electricFence } = require('./src/security');
@@ -63,10 +66,24 @@ app.post('/api/tokens', async (req, res) => {
     }
 });
 
+/**
+ * ⚡ Bolt Optimization:
+ * Replaced JSON.json() with a pre-calculated memory-cached JSON string and ETag.
+ * Performance gain: Bypasses O(n) serialization and O(n) hashing on every request.
+ * Enables efficient 304 Not Modified responses for high-frequency price updates.
+ */
 app.get('/api/prices/metals', async (req, res) => {
     try {
-        const prices = await fetchMetalPrices();
-        res.json(prices);
+        const { json, etag } = await fetchMetalPricesFull();
+
+        if (req.headers['if-none-match'] === etag) {
+            return res.set('ETag', etag).status(304).end();
+        }
+
+        res.set({
+            'Content-Type': 'application/json',
+            'ETag': etag
+        }).send(json);
     } catch (err) {
         console.error('Error fetching metal prices:', err);
         res.status(500).json({ error: 'Failed to fetch metal prices' });
@@ -75,8 +92,16 @@ app.get('/api/prices/metals', async (req, res) => {
 
 app.get('/api/prices/crypto', async (req, res) => {
     try {
-        const prices = await fetchCryptoPrices();
-        res.json(prices);
+        const { json, etag } = await fetchCryptoPricesFull();
+
+        if (req.headers['if-none-match'] === etag) {
+            return res.set('ETag', etag).status(304).end();
+        }
+
+        res.set({
+            'Content-Type': 'application/json',
+            'ETag': etag
+        }).send(json);
     } catch (err) {
         console.error('Error fetching crypto prices:', err);
         res.status(500).json({ error: 'Failed to fetch crypto prices' });
