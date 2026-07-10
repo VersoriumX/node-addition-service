@@ -1,9 +1,10 @@
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 const config = require('./config');
 
 const CACHE_DURATION = 60 * 1000; // 1 minute cache
-let metalCache = { data: null, timestamp: 0 };
-let cryptoCache = { data: null, timestamp: 0 };
+let metalCache = { data: null, timestamp: 0, json: null, etag: null };
+let cryptoCache = { data: null, timestamp: 0, json: null, etag: null };
 
 /**
  * ⚡ Bolt Optimization: Request Coalescing (Promise Memoization)
@@ -11,6 +12,10 @@ let cryptoCache = { data: null, timestamp: 0 };
  * Concurrent requests for the same resource will await the same promise instead of triggering multiple network calls.
  */
 const pendingPromises = new Map();
+
+function generateETag(content) {
+    return `"${crypto.createHash('md5').update(content).digest('hex')}"`;
+}
 
 async function fetchWithCache(url, cache, headers = {}) {
     const now = Date.now();
@@ -30,7 +35,15 @@ async function fetchWithCache(url, cache, headers = {}) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+
+            // ⚡ Bolt Optimization: Pre-serialize JSON and pre-calculate ETag
+            // to avoid O(n) serialization and hashing overhead on every request.
+            const json = JSON.stringify(data);
+            const etag = generateETag(json);
+
             cache.data = data;
+            cache.json = json;
+            cache.etag = etag;
             cache.timestamp = Date.now();
             return data;
         } catch (error) {
@@ -64,4 +77,21 @@ async function fetchCryptoPrices() {
     return fetchWithCache(url, cryptoCache);
 }
 
-module.exports = { fetchMetalPrices, fetchCryptoPrices };
+/**
+ * ⚡ Bolt Optimization: Getters for cached JSON and ETag.
+ * These allow the route handlers to serve pre-calculated data directly.
+ */
+function getMetalCache() {
+    return { json: metalCache.json, etag: metalCache.etag };
+}
+
+function getCryptoCache() {
+    return { json: cryptoCache.json, etag: cryptoCache.etag };
+}
+
+module.exports = {
+    fetchMetalPrices,
+    fetchCryptoPrices,
+    getMetalCache,
+    getCryptoCache
+};
