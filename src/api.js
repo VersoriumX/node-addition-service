@@ -1,14 +1,14 @@
 const fetch = require('node-fetch');
+const crypto = require('crypto');
 const config = require('./config');
 
 const CACHE_DURATION = 60 * 1000; // 1 minute cache
-let metalCache = { data: null, timestamp: 0 };
-let cryptoCache = { data: null, timestamp: 0 };
+let metalCache = { data: null, json: null, etag: null, timestamp: 0 };
+let cryptoCache = { data: null, json: null, etag: null, timestamp: 0 };
 
 /**
  * ⚡ Bolt Optimization: Request Coalescing (Promise Memoization)
  * This Map stores in-flight promises for specific URLs to prevent the "Thundering Herd" problem.
- * Concurrent requests for the same resource will await the same promise instead of triggering multiple network calls.
  */
 const pendingPromises = new Map();
 
@@ -18,7 +18,6 @@ async function fetchWithCache(url, cache, headers = {}) {
         return cache.data;
     }
 
-    // ⚡ Bolt Optimization: If there's already an in-flight request for this URL, join it.
     if (pendingPromises.has(url)) {
         return pendingPromises.get(url);
     }
@@ -30,22 +29,23 @@ async function fetchWithCache(url, cache, headers = {}) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+
+            // ⚡ Bolt Optimization: Pre-calculate JSON and ETag to avoid O(n) overhead on every request
+            const jsonString = JSON.stringify(data);
+            const etag = `"${crypto.createHash('md5').update(jsonString).digest('hex')}"`;
+
             cache.data = data;
+            cache.json = jsonString;
+            cache.etag = etag;
             cache.timestamp = Date.now();
             return data;
         } catch (error) {
-            /**
-             * 🛡️ Sentinel Security Enhancement:
-             * Redact sensitive query parameters from URLs in error logs to prevent credential leakage.
-             * We log only the error message to avoid potential secret leakage via the full error object properties.
-             */
             const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY)=[^&]+/g, '$1=[REDACTED]');
             console.error(`Error fetching from ${redactedUrl}: ${error.message}`);
 
-            if (cache.data) return cache.data; // Return stale data on error
+            if (cache.data) return cache.data;
             throw error;
         } finally {
-            // Clean up the pending promise once it's settled
             pendingPromises.delete(url);
         }
     })();
@@ -64,4 +64,12 @@ async function fetchCryptoPrices() {
     return fetchWithCache(url, cryptoCache);
 }
 
-module.exports = { fetchMetalPrices, fetchCryptoPrices };
+function getMetalCache() {
+    return metalCache;
+}
+
+function getCryptoCache() {
+    return cryptoCache;
+}
+
+module.exports = { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache };
