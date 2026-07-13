@@ -37,3 +37,7 @@
 ## 2025-05-14 - Middleware Performance and Allocation Reduction
 **Learning:** Middleware functions that run on every request (like security filters) can become major bottlenecks if they perform unnecessary allocations (e.g., `Object.values()`) or redeclare helper functions. In Node.js, manual `for...in` loops and hoisting helpers outside the request handler significantly reduce GC pressure and execution time.
 **Action:** Always hoist helper functions outside of Express middleware. Use manual loops instead of higher-order array methods if the object being iterated is large or if the middleware is on a hot path.
+
+## 2024-05-23 - Combined JSON and ETag Caching for External APIs
+**Learning:** For external API proxies that serve relatively static data (like price feeds), pre-serializing the JSON and pre-calculating the ETag at the moment of cache update allows for O(1) response generation. This bypasses Express's default behavior of re-serializing and re-hashing the entire response body on every request.
+**Action:** In proxy services, store 'json' and 'etag' strings in the cache object and serve them directly with 'res.send()', while manually checking 'If-None-Match' to return 304 early.
