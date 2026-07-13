@@ -18,3 +18,8 @@
 **Vulnerability:** The `electricFence` middleware only inspected top-level properties of `req.body` and `req.query`, allowing malicious ReDoS payloads to bypass detection when placed in nested objects.
 **Learning:** Express and other modern web frameworks often parse complex query strings or JSON bodies into nested objects. A "flat" security check is insufficient as it fails to inspect the full surface area of the request data.
 **Prevention:** Implement recursive inspection for security middleware that scans request data, or enforce strict schema validation to prevent unexpected nesting.
+
+## 2025-05-20 - Broken Security Middleware due to Syntax Errors
+**Vulnerability:** The `electricFence` middleware was completely broken due to a syntax error (`Unexpected token '*'`), causing the entire application to crash on startup.
+**Learning:** Security features that are manually implemented or refactored without immediate automated syntax verification can become a single point of failure for application availability.
+**Prevention:** Always use `node -c` or similar linting tools in CI/CD and pre-commit hooks to ensure security-critical files are syntactically valid.
