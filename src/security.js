@@ -12,7 +12,8 @@ const quarantinedIPs = new Set();
  * Includes a depth limit to prevent stack overflow on circular structures.
  */
 function checkObject(obj, depth = 0) {
-    if (!obj || typeof obj !== 'object' || depth > 10) return false;
+    if (!obj || typeof obj !== 'object') return false;
+    if (depth > 10) return true;
 
     for (const key in obj) {
         if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
