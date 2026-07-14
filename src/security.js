@@ -13,7 +13,7 @@ const quarantinedIPs = new Set();
  * Includes a depth limit to prevent stack overflow from circular references.
  */
 function checkObject(obj, depth = 0) {
-    if (!obj || typeof obj !== 'object' || depth > 10) return false;
+    if (!obj || typeof obj !== 'object' || depth > 10 || ArrayBuffer.isView(obj)) return false;
 
     for (const key in obj) {
         if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
