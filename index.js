@@ -93,7 +93,8 @@ app.get('/api/prices/crypto', async (req, res) => {
         await fetchCryptoPrices(); // Ensure cache is populated
         const cache = getCryptoCache();
 
-        if (req.headers['if-none-match'] === cache.etag) {
+        const clientEtag = req.headers['if-none-match'];
+        if (clientEtag && (clientEtag === cache.etag || clientEtag === 'W/' + cache.etag)) {
             return res.set('ETag', cache.etag).status(304).end();
         }
 
