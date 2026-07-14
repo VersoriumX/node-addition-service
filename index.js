@@ -90,16 +90,16 @@ app.get('/api/prices/crypto', async (req, res) => {
         await fetchCryptoPrices();
         const cache = getCryptoCache();
 
-        // ⚡ Bolt Optimization: Conditional GET (304 Not Modified) handling
-        if (req.headers['if-none-match'] === cache.etag) {
-            return res.set('ETag', cache.etag).status(304).end();
-        }
-
-        // ⚡ Bolt Optimization: Serving pre-serialized JSON directly from memory.
         res.set({
             'Content-Type': 'application/json',
             'ETag': cache.etag
-        }).send(cache.json);
+        });
+
+        if (req.fresh) {
+            return res.status(304).end();
+        }
+
+        res.send(cache.json);
     } catch (err) {
         console.error('Error fetching crypto prices:', err);
         res.status(500).json({ error: 'Failed to fetch crypto prices' });
