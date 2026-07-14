@@ -3,6 +3,17 @@
  * This can be used to test the robustness of input fields.
  */
 
+/**
+ * ⚡ Bolt Optimization:
+ * Pre-allocated lookup map for leet variations to avoid chained .replace() calls.
+ */
+const leetMap = {
+    'e': '3', 'E': '3',
+    'a': '4', 'A': '4',
+    's': '5', 'S': '5',
+    'o': '0', 'O': '0'
+};
+
 function generateVariations(baseString) {
     const variations = new Set();
     variations.add(baseString);
@@ -10,10 +21,11 @@ function generateVariations(baseString) {
     variations.add(baseString.toLowerCase());
     variations.add(baseString + "123");
     variations.add(baseString + "!");
+
     variations.add(baseString.split('').reverse().join(''));
 
-    // Add some common "leet" variations
-    let leet = baseString.replace(/e/gi, '3').replace(/a/gi, '4').replace(/s/gi, '5').replace(/o/gi, '0');
+    // ⚡ Bolt Optimization: Replace chained .replace() calls with single regex + lookup map
+    const leet = baseString.replace(/[easo]/gi, m => leetMap[m]);
     variations.add(leet);
 
     return Array.from(variations);
