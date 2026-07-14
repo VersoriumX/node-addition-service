@@ -73,7 +73,8 @@ app.get('/api/prices/metals', async (req, res) => {
         await fetchMetalPrices(); // Ensure cache is populated
         const cache = getMetalCache();
 
-        if (req.headers['if-none-match'] === cache.etag) {
+        const clientEtag = req.headers['if-none-match'];
+        if (clientEtag && (clientEtag === cache.etag || clientEtag === 'W/' + cache.etag)) {
             return res.set('ETag', cache.etag).status(304).end();
         }
 
