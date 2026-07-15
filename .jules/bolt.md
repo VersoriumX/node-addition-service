@@ -41,3 +41,7 @@
 ## 2024-05-23 - Combined JSON and ETag Caching for External APIs
 **Learning:** For external API proxies that serve relatively static data (like price feeds), pre-serializing the JSON and pre-calculating the ETag at the moment of cache update allows for O(1) response generation. This bypasses Express's default behavior of re-serializing and re-hashing the entire response body on every request.
 **Action:** In proxy services, store 'json' and 'etag' strings in the cache object and serve them directly with 'res.send()', while manually checking 'If-None-Match' to return 304 early.
+
+## 2024-05-24 - Single-pass Regex Replacement for String Variations
+**Learning:** Chained `.replace()` calls on the same string result in multiple traversals and the creation of multiple intermediate string objects, increasing garbage collection pressure and execution time.
+**Action:** Use a single regex pass with a mapping function for multi-character replacements. Hoisting the regex and the mapping object outside the hot path further reduces allocation overhead per call.
