@@ -18,3 +18,8 @@
 **Vulnerability:** The `electricFence` middleware only inspected top-level properties of `req.body` and `req.query`, allowing malicious ReDoS payloads to bypass detection when placed in nested objects.
 **Learning:** Express and other modern web frameworks often parse complex query strings or JSON bodies into nested objects. A "flat" security check is insufficient as it fails to inspect the full surface area of the request data.
 **Prevention:** Implement recursive inspection for security middleware that scans request data, or enforce strict schema validation to prevent unexpected nesting.
+
+## 2025-05-17 - Stale Resolution-Pinned Vulnerabilities
+**Vulnerability:** An ancient, ReDoS-vulnerable version of `path-to-regexp` (0.1.x) was pinned in `package.json` resolutions, overriding the secure version expected by `express@5`.
+**Learning:** Dependency resolutions can be a double-edged sword. While they help fix transitive vulnerabilities, they can also "freeze" vulnerable versions in place long after they should have been upgraded, especially during major version transitions of parent packages.
+**Prevention:** Regularly audit `resolutions` and `overrides` to ensure they are still necessary and don't conflict with the requirements of top-level dependencies.
