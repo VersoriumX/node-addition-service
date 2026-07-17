@@ -109,12 +109,26 @@ app.get('/api/prices/crypto', async (req, res) => {
 app.post('/api/encrypt', (req, res) => {
     const { text } = req.body;
     if (!text) return res.status(400).json({ error: 'Text is required' });
-    res.json({ encrypted: encrypt(text) });
+    if (typeof text !== 'string') {
+        return res.status(400).json({ error: 'Text must be a string' });
+    }
+    // RSA key size is 2048 bits. Max message size with PKCS#1 padding is 245 bytes.
+    if (text.length > 245) {
+        return res.status(400).json({ error: 'Text length exceeds maximum of 245 characters' });
+    }
+    try {
+        res.json({ encrypted: encrypt(text) });
+    } catch (err) {
+        res.status(500).json({ error: 'Encryption failed' });
+    }
 });
 
 app.post('/api/decrypt', (req, res) => {
     const { encrypted } = req.body;
     if (!encrypted) return res.status(400).json({ error: 'Encrypted text is required' });
+    if (typeof encrypted !== 'string') {
+        return res.status(400).json({ error: 'Encrypted text must be a string' });
+    }
     try {
         res.json({ decrypted: decrypt(encrypted) });
     } catch (err) {
@@ -126,7 +140,14 @@ app.post('/api/decrypt', (req, res) => {
 app.get('/api/fuzz', (req, res) => {
     const { input } = req.query;
     if (!input) return res.status(400).json({ error: 'Input is required' });
-    res.json({ variations: generateVariations(input) });
+    if (typeof input !== 'string') {
+        return res.status(400).json({ error: 'Input must be a single string' });
+    }
+    try {
+        res.json({ variations: generateVariations(input) });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
 });
 
 // Robots / SEO

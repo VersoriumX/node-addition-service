@@ -4,6 +4,13 @@
  */
 
 function generateVariations(baseString) {
+    if (typeof baseString !== 'string') {
+        throw new TypeError('Input must be a string');
+    }
+    if (baseString.length > 250) {
+        throw new Error('Input length exceeds maximum allowed of 250 characters');
+    }
+
     const variations = new Set();
     variations.add(baseString);
     variations.add(baseString.toUpperCase());
