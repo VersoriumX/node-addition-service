@@ -9,4 +9,15 @@ describe('Fuzzer Service', () => {
         expect(variations).to.include('PASS');
         expect(variations).to.include('p455');
     });
+
+    it('should throw TypeError if input is not a string', () => {
+        expect(() => generateVariations(123)).to.throw(TypeError, 'Input must be a string');
+        expect(() => generateVariations([])).to.throw(TypeError, 'Input must be a string');
+        expect(() => generateVariations({})).to.throw(TypeError, 'Input must be a string');
+    });
+
+    it('should throw RangeError if input length exceeds 250 characters', () => {
+        const longInput = 'a'.repeat(251);
+        expect(() => generateVariations(longInput)).to.throw(RangeError, 'Input length must be 250 characters or less');
+    });
 });

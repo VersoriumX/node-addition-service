@@ -109,7 +109,23 @@ app.get('/api/prices/crypto', async (req, res) => {
 app.post('/api/encrypt', (req, res) => {
     const { text } = req.body;
     if (!text) return res.status(400).json({ error: 'Text is required' });
-    res.json({ encrypted: encrypt(text) });
+
+    // 🛡️ Sentinel Security Enhancement:
+    // Strictly validate input and enforce a 245 characters length limit
+    // to prevent Node-RSA library crashes associated with exceeding maximum
+    // PKCS#1 padding capacity for 2048-bit keys.
+    if (typeof text !== 'string') {
+        return res.status(400).json({ error: 'Text must be a string' });
+    }
+    if (text.length > 245) {
+        return res.status(400).json({ error: 'Text exceeds maximum length of 245 characters' });
+    }
+
+    try {
+        res.json({ encrypted: encrypt(text) });
+    } catch (err) {
+        res.status(400).json({ error: err.message || 'Encryption failed' });
+    }
 });
 
 app.post('/api/decrypt', (req, res) => {
@@ -126,7 +142,21 @@ app.post('/api/decrypt', (req, res) => {
 app.get('/api/fuzz', (req, res) => {
     const { input } = req.query;
     if (!input) return res.status(400).json({ error: 'Input is required' });
-    res.json({ variations: generateVariations(input) });
+
+    // 🛡️ Sentinel Security Enhancement:
+    // Strictly validate input to protect against TypeError crashes and resource exhaustion DoS.
+    if (typeof input !== 'string') {
+        return res.status(400).json({ error: 'Input must be a string' });
+    }
+    if (input.length > 250) {
+        return res.status(400).json({ error: 'Input length must be 250 characters or less' });
+    }
+
+    try {
+        res.json({ variations: generateVariations(input) });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
 });
 
 // Robots / SEO
