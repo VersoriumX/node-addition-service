@@ -16,6 +16,14 @@ function generateKeys() {
 }
 
 function encrypt(text) {
+    if (typeof text !== 'string') {
+        throw new TypeError('Input must be a string');
+    }
+    // 🛡️ Sentinel Security Enhancement:
+    // Limit encryption payload to 245 characters to avoid Node-RSA crash on 2048-bit key.
+    if (text.length > 245) {
+        throw new RangeError('Input exceeds maximum length of 245 characters');
+    }
     return key.encrypt(text, 'base64');
 }
 

@@ -8,4 +8,15 @@ describe('Encryption Service', () => {
         const decrypted = decrypt(encrypted);
         expect(decrypted).to.equal(text);
     });
+
+    it('should throw TypeError if input is not a string', () => {
+        expect(() => encrypt(123)).to.throw(TypeError, 'Input must be a string');
+        expect(() => encrypt([])).to.throw(TypeError, 'Input must be a string');
+        expect(() => encrypt({})).to.throw(TypeError, 'Input must be a string');
+    });
+
+    it('should throw RangeError if input exceeds 245 characters', () => {
+        const longText = 'a'.repeat(246);
+        expect(() => encrypt(longText)).to.throw(RangeError, 'Input exceeds maximum length of 245 characters');
+    });
 });

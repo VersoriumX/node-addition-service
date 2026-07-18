@@ -18,3 +18,13 @@
 **Vulnerability:** The `electricFence` middleware only inspected top-level properties of `req.body` and `req.query`, allowing malicious ReDoS payloads to bypass detection when placed in nested objects.
 **Learning:** Express and other modern web frameworks often parse complex query strings or JSON bodies into nested objects. A "flat" security check is insufficient as it fails to inspect the full surface area of the request data.
 **Prevention:** Implement recursive inspection for security middleware that scans request data, or enforce strict schema validation to prevent unexpected nesting.
+
+## 2026-07-18 - Express 5.x Runtime Crash with path-to-regexp Resolution
+**Vulnerability:** Forcing legacy versions of `path-to-regexp` (< 8.0.0) via package resolutions to resolve ReDoS issues in older versions introduced a severe runtime crash (`TypeError: pathRegexp.match is not a function`) when upgraded to Express 5.x.
+**Learning:** Express 5.x has major breaking changes and relies on modern `path-to-regexp` APIs (version 8+). Enforcing outdated dependencies globally across package managers can cause critical service outages.
+**Prevention:** Always verify runtime capability and test package startup after altering resolutions, and match dependency resolution overrides with the major version requirements of active frameworks.
+
+## 2026-07-18 - Unbounded User Input and Non-String Payload Crashes
+**Vulnerability:** Endpoint `/api/fuzz` was susceptible to crashes (`TypeError: toUpperCase is not a function`) and resource-exhaustion Denial of Service (DoS) when passed non-string payloads or extremely large inputs. `/api/encrypt` crashed on strings exceeding Node-RSA 2048-bit PKCS#1 padding limits (> 245 characters).
+**Learning:** Relying on standard route input parsers without explicit type and size validation can result in unexpected library/runtime errors and application crashes under abnormal workloads.
+**Prevention:** Strictly validate input types (e.g. check `typeof input === 'string'`) and enforce conservative maximum length bounds (e.g., 250 for fuzzer, 245 for RSA encryption) at both the API routing layer and utility service layer.
