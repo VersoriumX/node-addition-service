@@ -18,3 +18,8 @@
 **Vulnerability:** The `electricFence` middleware only inspected top-level properties of `req.body` and `req.query`, allowing malicious ReDoS payloads to bypass detection when placed in nested objects.
 **Learning:** Express and other modern web frameworks often parse complex query strings or JSON bodies into nested objects. A "flat" security check is insufficient as it fails to inspect the full surface area of the request data.
 **Prevention:** Implement recursive inspection for security middleware that scans request data, or enforce strict schema validation to prevent unexpected nesting.
+
+## 2025-05-17 - RSA Padding Limitations and Input Validation DoS
+**Vulnerability:** The `/api/encrypt` and `/api/fuzz` endpoints accepted arbitrary input lengths and non-string types, resulting in TypeError crashes, high CPU/Memory resource exhaustion (DoS), and RSA padding capacity crashes.
+**Learning:** Cryptographic algorithms (like RSA with 2048-bit keys using PKCS#1 padding) have strict maximum payload limits (e.g., 245 bytes). Unvalidated array/object inputs also cause TypeErrors in string-manipulation methods.
+**Prevention:** Implement multi-layered input validation at both the Express routing layer and internal service layers to enforce type restrictions and safe upper length limits.
