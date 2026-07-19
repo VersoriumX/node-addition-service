@@ -16,10 +16,19 @@ function generateKeys() {
 }
 
 function encrypt(text) {
+    if (typeof text !== 'string') {
+        throw new TypeError('Text must be a string');
+    }
+    if (text.length > 245) {
+        throw new Error('Text is too long (max 245 characters)');
+    }
     return key.encrypt(text, 'base64');
 }
 
 function decrypt(encryptedText) {
+    if (typeof encryptedText !== 'string') {
+        throw new TypeError('Encrypted text must be a string');
+    }
     return key.decrypt(encryptedText, 'utf8');
 }
 
