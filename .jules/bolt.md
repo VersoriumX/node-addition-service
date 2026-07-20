@@ -41,3 +41,7 @@
 ## 2024-05-23 - Combined JSON and ETag Caching for External APIs
 **Learning:** For external API proxies that serve relatively static data (like price feeds), pre-serializing the JSON and pre-calculating the ETag at the moment of cache update allows for O(1) response generation. This bypasses Express's default behavior of re-serializing and re-hashing the entire response body on every request.
 **Action:** In proxy services, store 'json' and 'etag' strings in the cache object and serve them directly with 'res.send()', while manually checking 'If-None-Match' to return 304 early.
+
+## 2026-07-06 - Lazy Initialization for Cryptographic Services
+**Learning:** Cryptographic key generation (e.g. 2048-bit RSA) is highly CPU-intensive and can block the event loop for ~40-100ms. In environments with cold starts or dense module require trees (like test environments or serverless endpoints), executing this generation directly inside the module evaluation context adds unnecessary overhead to import time and delay start latency, even if cryptographic operations are never actually called.
+**Action:** Use lazy initialization/deferred instantiation for heavy CPU objects like RSA keys, deferring the instantiation of `node-rsa` instances until the first actual cryptographic invocation.
