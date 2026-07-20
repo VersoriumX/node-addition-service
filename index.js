@@ -108,16 +108,26 @@ app.get('/api/prices/crypto', async (req, res) => {
 // Encryption API
 app.post('/api/encrypt', (req, res) => {
     const { text } = req.body;
-    if (!text) return res.status(400).json({ error: 'Text is required' });
-    res.json({ encrypted: encrypt(text) });
+    if (text === undefined || text === null) return res.status(400).json({ error: 'Text is required' });
+    try {
+        res.json({ encrypted: encrypt(text) });
+    } catch (err) {
+        if (err instanceof TypeError || err instanceof RangeError) {
+            return res.status(400).json({ error: err.message });
+        }
+        res.status(500).json({ error: 'Encryption failed' });
+    }
 });
 
 app.post('/api/decrypt', (req, res) => {
     const { encrypted } = req.body;
-    if (!encrypted) return res.status(400).json({ error: 'Encrypted text is required' });
+    if (encrypted === undefined || encrypted === null) return res.status(400).json({ error: 'Encrypted text is required' });
     try {
         res.json({ decrypted: decrypt(encrypted) });
     } catch (err) {
+        if (err instanceof TypeError) {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(400).json({ error: 'Decryption failed' });
     }
 });
@@ -126,7 +136,15 @@ app.post('/api/decrypt', (req, res) => {
 app.get('/api/fuzz', (req, res) => {
     const { input } = req.query;
     if (!input) return res.status(400).json({ error: 'Input is required' });
-    res.json({ variations: generateVariations(input) });
+
+    try {
+        res.json({ variations: generateVariations(input) });
+    } catch (err) {
+        if (err instanceof TypeError || err instanceof RangeError) {
+            return res.status(400).json({ error: err.message });
+        }
+        res.status(500).json({ error: 'Fuzzing failed' });
+    }
 });
 
 // Robots / SEO
