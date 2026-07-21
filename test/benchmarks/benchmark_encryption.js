@@ -24,7 +24,7 @@ async function runBenchmark() {
 
     // Subsequent cryptographic call
     const startSubsequent = Date.now();
-    const decrypted = encryptionModule.decrypt(encrypted);
+    encryptionModule.decrypt(encrypted);
     const endSubsequent = Date.now();
     const subsequentCryptoDuration = endSubsequent - startSubsequent;
 
