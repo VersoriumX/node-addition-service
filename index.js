@@ -108,13 +108,24 @@ app.get('/api/prices/crypto', async (req, res) => {
 // Encryption API
 app.post('/api/encrypt', (req, res) => {
     const { text } = req.body;
-    if (!text) return res.status(400).json({ error: 'Text is required' });
-    res.json({ encrypted: encrypt(text) });
+    if (text === undefined || typeof text !== 'string') {
+        return res.status(400).json({ error: 'Text must be a string' });
+    }
+    if (text.length > 245) {
+        return res.status(400).json({ error: 'Text length must not exceed 245 characters' });
+    }
+    try {
+        res.json({ encrypted: encrypt(text) });
+    } catch (err) {
+        res.status(400).json({ error: 'Encryption failed' });
+    }
 });
 
 app.post('/api/decrypt', (req, res) => {
     const { encrypted } = req.body;
-    if (!encrypted) return res.status(400).json({ error: 'Encrypted text is required' });
+    if (encrypted === undefined || typeof encrypted !== 'string') {
+        return res.status(400).json({ error: 'Encrypted text must be a string' });
+    }
     try {
         res.json({ decrypted: decrypt(encrypted) });
     } catch (err) {
@@ -125,7 +136,12 @@ app.post('/api/decrypt', (req, res) => {
 // Fuzzing API
 app.get('/api/fuzz', (req, res) => {
     const { input } = req.query;
-    if (!input) return res.status(400).json({ error: 'Input is required' });
+    if (input === undefined || typeof input !== 'string') {
+        return res.status(400).json({ error: 'Input must be a string' });
+    }
+    if (input.length > 250) {
+        return res.status(400).json({ error: 'Input must be 250 characters or less' });
+    }
     res.json({ variations: generateVariations(input) });
 });
 
