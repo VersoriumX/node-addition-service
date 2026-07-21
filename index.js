@@ -113,8 +113,8 @@ app.post('/api/encrypt', (req, res) => {
         return res.status(400).json({ error: 'Text must be a string' });
     }
     // RSA key size is 2048 bits. Max message size with PKCS#1 padding is 245 bytes.
-    if (text.length > 245) {
-        return res.status(400).json({ error: 'Text length exceeds maximum of 245 characters' });
+    if (Buffer.byteLength(text, 'utf8') > 245) {
+        return res.status(400).json({ error: 'Text length exceeds maximum of 245 bytes' });
     }
     try {
         res.json({ encrypted: encrypt(text) });
