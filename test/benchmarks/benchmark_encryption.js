@@ -37,6 +37,7 @@ if (decrypted === sampleText) {
     console.log('VERIFICATION: Encryption and Decryption are working perfectly.');
 } else {
     console.error('VERIFICATION FAILED: Decrypted text does not match sample!');
+    process.exit(1);
 }
 
 console.log('\nExpected Benefit:');
