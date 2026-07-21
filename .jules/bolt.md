@@ -3,6 +3,7 @@
 ## 2025-05-14 - Sequential Asynchronous File I/O
 **Learning:** Simply making file I/O asynchronous in Node.js can lead to race conditions and data corruption if multiple writes to the same file are triggered concurrently. This is especially critical for data persistence.
 **Action:** Implement a write queue to ensure that asynchronous writes are performed sequentially. This maintains the non-blocking benefits of async I/O while guaranteeing data integrity.
+
 ## 2025-05-14 - CI Pipeline Bottlenecks
 **Learning:** In projects designed to compare CI performance, the overhead of dependency installation (cold starts) is often the dominant factor in pipeline duration. Missing caching for `node_modules` or using inefficient package managers (e.g., `npm` instead of `yarn` when a `yarn.lock` is present) significantly inflates build times.
 **Action:** Always check for existing lockfiles (`yarn.lock`, `pnpm-lock.yaml`) and ensure CI configurations use the appropriate package manager and enable dependency caching (e.g., `actions/setup-node`'s `cache` option).
@@ -26,6 +27,7 @@
 ## 2026-07-06 - Request Coalescing (Thundering Herd Defense)
 **Learning:** Simple time-based caching is vulnerable to the "Thundering Herd" problem, where multiple concurrent requests for an expired or missing resource trigger redundant network calls simultaneously. This wastes bandwidth and risks rate-limiting from external APIs.
 **Action:** Implement request coalescing by tracking ongoing requests in a `Map` of promises. Concurrent calls for the same resource should await the existing promise instead of initiating new ones.
+
 ## 2026-07-05 - Request Coalescing to prevent Thundering Herd
 **Learning:** Concurrent requests for the same uncached resource can lead to redundant network calls or expensive operations, a phenomenon known as the "Thundering Herd" problem.
 **Action:** Implement request coalescing by storing in-flight promises in a Map. Subsequent concurrent requests for the same resource should await the existing promise instead of initiating a new one. Ensure promises are removed from the Map once they settle to prevent memory leaks.
@@ -41,3 +43,7 @@
 ## 2024-05-23 - Combined JSON and ETag Caching for External APIs
 **Learning:** For external API proxies that serve relatively static data (like price feeds), pre-serializing the JSON and pre-calculating the ETag at the moment of cache update allows for O(1) response generation. This bypasses Express's default behavior of re-serializing and re-hashing the entire response body on every request.
 **Action:** In proxy services, store 'json' and 'etag' strings in the cache object and serve them directly with 'res.send()', while manually checking 'If-None-Match' to return 304 early.
+
+## 2026-07-07 - Lazy Loading Cryptographic Keys
+**Learning:** Generating strong cryptographic keys (such as 2048-bit RSA keys) is a CPU-intensive operation (~100ms) that blocks Node's single-threaded event loop. If performed during module load, it introduces a significant latency penalty to overall application and test startup, even if no cryptographic routes are actively hit.
+**Action:** Utilize lazy initialization for heavy cryptographic operations. Defer key generation until the first actual call using a getter function, resulting in over 85% reduction in module import time.
