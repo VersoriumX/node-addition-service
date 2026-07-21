@@ -19,8 +19,8 @@ function encrypt(text) {
     if (typeof text !== 'string') {
         throw new TypeError('Input must be a string');
     }
-    if (text.length > 245) {
-        throw new RangeError('Input length must not exceed 245 characters');
+    if (Buffer.byteLength(text, 'utf8') > 245) {
+        throw new RangeError('Input byte length must not exceed 245 bytes');
     }
     return key.encrypt(text, 'base64');
 }
