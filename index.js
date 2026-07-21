@@ -111,8 +111,8 @@ app.post('/api/encrypt', (req, res) => {
     if (text === undefined || typeof text !== 'string') {
         return res.status(400).json({ error: 'Text must be a string' });
     }
-    if (text.length > 245) {
-        return res.status(400).json({ error: 'Text length must not exceed 245 characters' });
+    if (Buffer.byteLength(text, 'utf8') > 245) {
+        return res.status(400).json({ error: 'Text byte length must not exceed 245 bytes' });
     }
     try {
         res.json({ encrypted: encrypt(text) });
