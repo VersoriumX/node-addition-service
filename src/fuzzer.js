@@ -27,7 +27,7 @@ function generateVariations(baseString) {
     variations.add(baseString.split('').reverse().join(''));
 
     // ⚡ Bolt Optimization: Single-pass replace using a map is faster than chained .replace() calls.
-    let leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+    let leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m] ?? m);
     variations.add(leet);
 
     return Array.from(variations);
