@@ -49,3 +49,7 @@
 ## 2026-07-22 - Bypassing Asynchronous Promise Scheduling on Hot Cache Paths
 **Learning:** Even when cached data is fully valid and ready in memory, returning it from an async function and awaiting it incurs Node.js promise/microtask scheduling overhead. Checking the cache validity synchronously in the router before calling any async functions completely bypasses the event loop microtask queue.
 **Action:** Implement synchronous cache validation checks (e.g., `isCacheValid()`) on hot paths so the router can immediately serve cached responses without scheduling asynchronous promises. This can yield up to a 76% performance gain under heavy load.
+
+## 2026-07-23 - Micro-optimizations vs V8 JIT Compilation Paths
+**Learning:** Attempting to optimize `val.includes('**')` in security pattern checking by replacing it with a direct `indexOf()` check did not yield a performance improvement and actually degraded performance on certain inputs. The V8 JIT compiler provides highly optimized fast-paths for simple operations like `includes()`. Introducing manual variable re-assignments and loop control logic inside simple checks can interfere with inline optimizations.
+**Action:** Always benchmark micro-optimizations across multiple varying inputs before applying them, and prioritize standard, readable APIs that the JS engine JIT-optimizes effectively.
