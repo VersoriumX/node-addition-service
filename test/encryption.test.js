@@ -15,8 +15,8 @@ describe('Encryption Service', () => {
         expect(() => encrypt({})).to.throw(TypeError, 'Input must be a string');
     });
 
-    it('should throw RangeError if input exceeds 245 characters', () => {
+    it('should throw RangeError if input exceeds 245 bytes', () => {
         const longText = 'a'.repeat(246);
-        expect(() => encrypt(longText)).to.throw(RangeError, 'Input exceeds maximum length of 245 characters');
+        expect(() => encrypt(longText)).to.throw(RangeError, 'Input exceeds maximum length of 245 bytes');
     });
 });
