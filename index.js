@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const add = require('./add');
 const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenmanager');
-const { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache } = require('./src/api');
+const { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache, isMetalCacheValid, isCryptoCacheValid } = require('./src/api');
 const { encrypt, decrypt } = require('./src/encryption');
 const { generateVariations } = require('./src/fuzzer');
 const { electricFence } = require('./src/security');
@@ -69,6 +69,18 @@ app.post('/api/tokens', async (req, res) => {
  */
 app.get('/api/prices/metals', async (req, res) => {
     try {
+        // ⚡ Bolt Optimization: Fast path to bypass promise scheduling if the cache is already valid.
+        if (isMetalCacheValid()) {
+            const cache = getMetalCache();
+            if (req.headers['if-none-match'] === cache.etag) {
+                return res.set('ETag', cache.etag).status(304).end();
+            }
+            return res.set({
+                'Content-Type': 'application/json',
+                'ETag': cache.etag
+            }).send(cache.json);
+        }
+
         await fetchMetalPrices();
         const cache = getMetalCache();
 
@@ -88,6 +100,18 @@ app.get('/api/prices/metals', async (req, res) => {
 
 app.get('/api/prices/crypto', async (req, res) => {
     try {
+        // ⚡ Bolt Optimization: Fast path to bypass promise scheduling if the cache is already valid.
+        if (isCryptoCacheValid()) {
+            const cache = getCryptoCache();
+            if (req.headers['if-none-match'] === cache.etag) {
+                return res.set('ETag', cache.etag).status(304).end();
+            }
+            return res.set({
+                'Content-Type': 'application/json',
+                'ETag': cache.etag
+            }).send(cache.json);
+        }
+
         await fetchCryptoPrices();
         const cache = getCryptoCache();
 

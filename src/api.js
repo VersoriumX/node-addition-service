@@ -64,9 +64,19 @@ async function fetchCryptoPrices() {
     return fetchWithCache(url, cryptoCache);
 }
 
+function isMetalCacheValid() {
+    return !!(metalCache.data && (Date.now() - metalCache.timestamp < CACHE_DURATION));
+}
+
+function isCryptoCacheValid() {
+    return !!(cryptoCache.data && (Date.now() - cryptoCache.timestamp < CACHE_DURATION));
+}
+
 module.exports = {
     fetchMetalPrices,
     fetchCryptoPrices,
     getMetalCache: () => metalCache,
-    getCryptoCache: () => cryptoCache
+    getCryptoCache: () => cryptoCache,
+    isMetalCacheValid,
+    isCryptoCacheValid
 };
