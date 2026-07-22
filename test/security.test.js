@@ -17,6 +17,25 @@ describe('Electric Fence Security Middleware', () => {
         electricFence(req, res, next);
     });
 
+    it('should set standard security headers', (done) => {
+        const req = { query: {}, body: {}, ip: '1.2.3.4' };
+        const headers = {};
+        const res = {
+            setHeader: (name, val) => {
+                headers[name] = val;
+            }
+        };
+        const next = () => {
+            expect(headers['Content-Security-Policy']).to.equal("default-src 'self'");
+            expect(headers['X-Frame-Options']).to.equal('SAMEORIGIN');
+            expect(headers['X-Content-Type-Options']).to.equal('nosniff');
+            expect(headers['Referrer-Policy']).to.equal('strict-origin-when-cross-origin');
+            expect(headers['X-XSS-Protection']).to.equal('1; mode=block');
+            done();
+        };
+        electricFence(req, res, next);
+    });
+
     it('should quarantine and block suspicious requests (long string)', () => {
         const longString = 'a'.repeat(1001);
         const req = { query: { a: longString }, body: {}, ip: '6.6.6.6' };
