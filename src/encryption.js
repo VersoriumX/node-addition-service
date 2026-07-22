@@ -21,8 +21,8 @@ function encrypt(text) {
     }
     // 🛡️ Sentinel Security Enhancement:
     // Limit encryption payload to 245 characters to avoid Node-RSA crash on 2048-bit key.
-    if (text.length > 245) {
-        throw new RangeError('Input exceeds maximum length of 245 characters');
+    if (Buffer.byteLength(text, 'utf8') > 245) {
+        throw new RangeError('Input exceeds maximum length of 245 bytes');
     }
     return key.encrypt(text, 'base64');
 }
