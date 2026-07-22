@@ -155,7 +155,7 @@ app.get('/api/fuzz', (req, res) => {
     try {
         res.json({ variations: generateVariations(input) });
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        res.status(400).json({ error: err.message || 'Fuzzing failed' });
     }
 });
 
