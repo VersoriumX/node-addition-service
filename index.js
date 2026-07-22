@@ -126,6 +126,9 @@ app.post('/api/decrypt', (req, res) => {
     if (encrypted === undefined || typeof encrypted !== 'string') {
         return res.status(400).json({ error: 'Encrypted text must be a string' });
     }
+    if (encrypted.length > 500) {
+        return res.status(400).json({ error: 'Encrypted text length must not exceed 500 characters' });
+    }
     try {
         res.json({ decrypted: decrypt(encrypted) });
     } catch (err) {

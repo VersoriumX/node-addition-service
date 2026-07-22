@@ -44,8 +44,11 @@ updateCache();
 const SENSITIVE_KEYS = ['__proto__', 'constructor', 'prototype'];
 
 function addToken(name, value) {
-    if (typeof name !== 'string' || typeof value !== 'number') {
+    if (typeof name !== 'string' || typeof value !== 'number' || !Number.isFinite(value)) {
         throw new Error('Invalid token name or value');
+    }
+    if (name.length > 100) {
+        throw new Error('Token name is too long');
     }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
@@ -106,7 +109,7 @@ function updateToken(name, value) {
         throw new Error('Invalid token name: sensitive key');
     }
     if (tokens[name] !== undefined) {
-        if (typeof value !== 'number') {
+        if (typeof value !== 'number' || !Number.isFinite(value)) {
             throw new Error('Invalid token value');
         }
         tokens[name] = value;

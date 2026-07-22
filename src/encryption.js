@@ -41,6 +41,9 @@ function decrypt(encryptedText) {
     if (typeof encryptedText !== 'string') {
         throw new TypeError('Input must be a string');
     }
+    if (encryptedText.length > 500) {
+        throw new RangeError('Input length must not exceed 500 characters');
+    }
     return getKey().decrypt(encryptedText, 'utf8');
 }
 
