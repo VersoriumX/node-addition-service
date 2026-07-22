@@ -26,7 +26,7 @@ function generateVariations(baseString) {
 
     // ⚡ Bolt Optimization: Replace chained .replace() calls with a single-pass regex
     // and a pre-allocated map to avoid multiple string traversals and temporary allocations.
-    const leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+    const leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m] ?? m);
     variations.add(leet);
 
     return Array.from(variations);
