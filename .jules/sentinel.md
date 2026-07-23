@@ -23,3 +23,8 @@
 **Vulnerability:** The application was forced to use an outdated version of `path-to-regexp` (0.1.12) via `package.json` resolutions, which is vulnerable to ReDoS and incompatible with Express 5.x's internal routing logic.
 **Learning:** Forcing legacy versions of transitive dependencies to fix vulnerabilities can lead to runtime crashes if parent dependencies (like `router` in Express 5.x) have migrated to new major versions with breaking API changes.
 **Prevention:** Always verify that dependency resolutions align with the requirements of the top-level packages and prefer upgrading parent packages when possible.
+
+## 2025-07-17 - Asymmetric Cryptographic DoS via Decryption Payloads
+**Vulnerability:** Asymmetric decryption (RSA) is computationally expensive, and lack of input length validation allowed arbitrary-length payloads to be submitted, posing a high risk of CPU exhaustion and Denial of Service (DoS).
+**Learning:** Even though encryption endpoints restrict plaintext input, decryption endpoints must also enforce strict length constraints because ciphertexts have predictable maximum lengths based on key size (e.g., 500 characters for a 2048-bit RSA key).
+**Prevention:** Implement input length validation at both the routing layer and internal service layers before invoking asymmetric cryptographic functions.
