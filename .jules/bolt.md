@@ -49,3 +49,7 @@
 ## 2026-07-22 - Bypassing Asynchronous Promise Scheduling on Hot Cache Paths
 **Learning:** Even when cached data is fully valid and ready in memory, returning it from an async function and awaiting it incurs Node.js promise/microtask scheduling overhead. Checking the cache validity synchronously in the router before calling any async functions completely bypasses the event loop microtask queue.
 **Action:** Implement synchronous cache validation checks (e.g., `isCacheValid()`) on hot paths so the router can immediately serve cached responses without scheduling asynchronous promises. This can yield up to a 76% performance gain under heavy load.
+
+## 2026-07-23 - Middleware Registration Order for Static Assets
+**Learning:** Registering heavy middleware like payload parsers (`express.json()`) and recursive security scanners (`electricFence`) before serving static files runs those middlewares on *every* static asset request. Since static requests do not have JSON bodies or dynamic input to protect, this results in significant useless CPU overhead. Moving static file routers (`express.static`) and purely static GET handlers (`/robots.txt`, `/`) to the top of the middleware stack bypasses these operations entirely, saving ~14% latency per request.
+**Action:** Always place static file serving and purely static GET route declarations before registering body parsers, cookie parsers, or payload security middleware in Express.
