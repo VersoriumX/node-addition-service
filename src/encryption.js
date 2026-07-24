@@ -41,6 +41,11 @@ function decrypt(encryptedText) {
     if (typeof encryptedText !== 'string') {
         throw new TypeError('Input must be a string');
     }
+    // 🛡️ Sentinel Security Enhancement:
+    // Limit decryption payload length to 500 characters to protect against CPU/Memory resource exhaustion (DoS) attacks.
+    if (encryptedText.length > 500) {
+        throw new RangeError('Input length must not exceed 500 characters');
+    }
     return getKey().decrypt(encryptedText, 'utf8');
 }
 

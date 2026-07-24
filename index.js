@@ -150,6 +150,11 @@ app.post('/api/decrypt', (req, res) => {
     if (encrypted === undefined || typeof encrypted !== 'string') {
         return res.status(400).json({ error: 'Encrypted text must be a string' });
     }
+    // 🛡️ Sentinel Security Enhancement:
+    // Limit decryption payload length to 500 characters to protect against CPU/Memory resource exhaustion (DoS) attacks.
+    if (encrypted.length > 500) {
+        return res.status(400).json({ error: 'Encrypted text length must not exceed 500 characters' });
+    }
     try {
         res.json({ decrypted: decrypt(encrypted) });
     } catch (err) {
