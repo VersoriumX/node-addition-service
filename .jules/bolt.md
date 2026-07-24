@@ -49,3 +49,7 @@
 ## 2026-07-22 - Bypassing Asynchronous Promise Scheduling on Hot Cache Paths
 **Learning:** Even when cached data is fully valid and ready in memory, returning it from an async function and awaiting it incurs Node.js promise/microtask scheduling overhead. Checking the cache validity synchronously in the router before calling any async functions completely bypasses the event loop microtask queue.
 **Action:** Implement synchronous cache validation checks (e.g., `isCacheValid()`) on hot paths so the router can immediately serve cached responses without scheduling asynchronous promises. This can yield up to a 76% performance gain under heavy load.
+
+## 2026-07-23 - Express Middleware Pipeline and Routing Order
+**Learning:** In Express apps, heavy middleware (like `express.json()` and payload security/ReDoS scanners) runs sequentially for every request in the order they are defined. Serving static assets (e.g., `/`, `/robots.txt`, or public assets) *after* these middlewares imposes substantial unnecessary CPU/memory parsing and scanning overhead on purely static requests.
+**Action:** Always route and serve static assets and purely static GET endpoints *before* payload parsing (`express.json()`) and input validation/security scanning middlewares to completely bypass useless overhead and boost static file delivery speeds.
