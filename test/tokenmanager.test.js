@@ -17,4 +17,23 @@ describe('Token Manager', () => {
         deleteToken('TestToken');
         expect(getTokenValue('TestToken')).to.be.null;
     });
+
+    it('should reject a token name longer than 100 characters', () => {
+        const longName = 'a'.repeat(101);
+        expect(() => addToken(longName, 100)).to.throw('Invalid token name or value');
+    });
+
+    it('should reject non-finite values in addToken', () => {
+        expect(() => addToken('FiniteCheck', NaN)).to.throw('Invalid token name or value');
+        expect(() => addToken('FiniteCheck', Infinity)).to.throw('Invalid token name or value');
+        expect(() => addToken('FiniteCheck', -Infinity)).to.throw('Invalid token name or value');
+    });
+
+    it('should reject non-finite values in updateToken', () => {
+        addToken('UpdateFiniteCheck', 123);
+        expect(() => updateToken('UpdateFiniteCheck', NaN)).to.throw('Invalid token value');
+        expect(() => updateToken('UpdateFiniteCheck', Infinity)).to.throw('Invalid token value');
+        expect(() => updateToken('UpdateFiniteCheck', -Infinity)).to.throw('Invalid token value');
+        deleteToken('UpdateFiniteCheck');
+    });
 });

@@ -23,3 +23,8 @@
 **Vulnerability:** The application was forced to use an outdated version of `path-to-regexp` (0.1.12) via `package.json` resolutions, which is vulnerable to ReDoS and incompatible with Express 5.x's internal routing logic.
 **Learning:** Forcing legacy versions of transitive dependencies to fix vulnerabilities can lead to runtime crashes if parent dependencies (like `router` in Express 5.x) have migrated to new major versions with breaking API changes.
 **Prevention:** Always verify that dependency resolutions align with the requirements of the top-level packages and prefer upgrading parent packages when possible.
+
+## 2026-07-23 - Unconstrained Inputs in Token Management
+**Vulnerability:** Additions and updates to tokens were not restricted by size or number domain validation. This could lead to Denial of Service (DoS) via database file bloat and memory exhaustion from excessively large names, and JSON serialization anomalies from non-finite numerical values (e.g. `NaN` or `Infinity` being written as `null`).
+**Learning:** Checking parameter type alone is insufficient for robust input validation. String size bounds must be explicitly checked, and numerical bounds/properties (such as being finite) must be enforced to prevent memory exhaustion and data corruption during JSON stringification.
+**Prevention:** Always combine type checks with size bounds (`length <= limit`) and mathematical properties checks (`Number.isFinite`) on all user-controlled inputs.
