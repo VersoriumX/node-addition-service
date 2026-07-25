@@ -10,9 +10,22 @@ const { electricFence } = require('./src/security');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// ⚡ Bolt Optimization:
+// Move static file routing and purely static handlers BEFORE payload parsing and security checks.
+// This allows static file requests (/, /robots.txt, and files in public/) to completely bypass
+// JSON parsing and recursive security scanning, reducing CPU overhead and latency.
+app.get('/robots.txt', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+});
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'VersoriumX.html'));
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.use(express.json());
 app.use(electricFence); // Apply Electric Fence Security Middleware
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Original legacy route
 app.get('/add', (req, res) => {
@@ -167,15 +180,6 @@ app.get('/api/fuzz', (req, res) => {
         return res.status(400).json({ error: 'Input must be 250 characters or less' });
     }
     res.json({ variations: generateVariations(input) });
-});
-
-// Robots / SEO
-app.get('/robots.txt', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'VersoriumX.html'));
 });
 
 app.listen(port, () => {
