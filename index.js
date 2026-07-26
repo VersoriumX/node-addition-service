@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const add = require('./add');
 const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache, isMetalCacheValid, isCryptoCacheValid } = require('./src/api');
@@ -10,16 +12,66 @@ const { electricFence } = require('./src/security');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// ⚡ Bolt Optimization: Eagerly load static files into memory on startup to avoid disk I/O,
+// and pre-calculate their ETags to enable instant cache-friendly HTTP 304 responses.
+const robotsTxtPath = path.join(__dirname, 'public', 'robots.txt');
+const indexHtmlPath = path.join(__dirname, 'public', 'VersoriumX.html');
+
+let robotsTxtContent = '';
+let robotsTxtEtag = '';
+let indexHtmlContent = '';
+let indexHtmlEtag = '';
+
+try {
+    robotsTxtContent = fs.readFileSync(robotsTxtPath, 'utf8');
+    robotsTxtEtag = `"${crypto.createHash('md5').update(robotsTxtContent).digest('hex')}"`;
+} catch (err) {
+    console.error('Failed to pre-load robots.txt:', err);
+}
+
+try {
+    indexHtmlContent = fs.readFileSync(indexHtmlPath, 'utf8');
+    indexHtmlEtag = `"${crypto.createHash('md5').update(indexHtmlContent).digest('hex')}"`;
+} catch (err) {
+    console.error('Failed to pre-load VersoriumX.html:', err);
+}
+
 // ⚡ Bolt Optimization:
 // Move static file routing and purely static handlers BEFORE payload parsing and security checks.
 // This allows static file requests (/, /robots.txt, and files in public/) to completely bypass
 // JSON parsing and recursive security scanning, reducing CPU overhead and latency.
 app.get('/robots.txt', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+    // If not in production, or if load failed, fall back to direct file transmission.
+    if (process.env.NODE_ENV !== 'production' || !robotsTxtContent) {
+        return res.sendFile(robotsTxtPath);
+    }
+
+    // Robust check for if-none-match containing the ETag (supports weak ETag formatting and multiple ETags)
+    const ifNoneMatch = req.headers['if-none-match'];
+    if (ifNoneMatch && (ifNoneMatch === robotsTxtEtag || ifNoneMatch.includes(robotsTxtEtag))) {
+        return res.set('ETag', robotsTxtEtag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/plain; charset=utf-8',
+        'ETag': robotsTxtEtag
+    }).send(robotsTxtContent);
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'VersoriumX.html'));
+    // If not in production, or if load failed, fall back to direct file transmission.
+    if (process.env.NODE_ENV !== 'production' || !indexHtmlContent) {
+        return res.sendFile(indexHtmlPath);
+    }
+
+    // Robust check for if-none-match containing the ETag (supports weak ETag formatting and multiple ETags)
+    const ifNoneMatch = req.headers['if-none-match'];
+    if (ifNoneMatch && (ifNoneMatch === indexHtmlEtag || ifNoneMatch.includes(indexHtmlEtag))) {
+        return res.set('ETag', indexHtmlEtag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'ETag': indexHtmlEtag
+    }).send(indexHtmlContent);
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
