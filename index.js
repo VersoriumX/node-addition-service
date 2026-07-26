@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const add = require('./add');
 const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache, isMetalCacheValid, isCryptoCacheValid } = require('./src/api');
@@ -10,16 +12,35 @@ const { electricFence } = require('./src/security');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ⚡ Bolt Optimization:
-// Move static file routing and purely static handlers BEFORE payload parsing and security checks.
-// This allows static file requests (/, /robots.txt, and files in public/) to completely bypass
-// JSON parsing and recursive security scanning, reducing CPU overhead and latency.
+// ⚡ Bolt Optimization: Eagerly load static files into memory on startup and pre-calculate their MD5 ETags.
+// This completely avoids expensive disk I/O and dynamic ETag hashing on every single homepage or search bot request,
+// serving them directly from memory at sub-microsecond speeds.
+const robotsPath = path.join(__dirname, 'public', 'robots.txt');
+const robotsContent = fs.readFileSync(robotsPath, 'utf8');
+const robotsETag = `"${crypto.createHash('md5').update(robotsContent).digest('hex')}"`;
+
+const homePath = path.join(__dirname, 'public', 'VersoriumX.html');
+const homeContent = fs.readFileSync(homePath, 'utf8');
+const homeETag = `"${crypto.createHash('md5').update(homeContent).digest('hex')}"`;
+
 app.get('/robots.txt', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+    if (req.headers['if-none-match'] === robotsETag) {
+        return res.set('ETag', robotsETag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/plain; charset=UTF-8',
+        'ETag': robotsETag
+    }).send(robotsContent);
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'VersoriumX.html'));
+    if (req.headers['if-none-match'] === homeETag) {
+        return res.set('ETag', homeETag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/html; charset=UTF-8',
+        'ETag': homeETag
+    }).send(homeContent);
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
