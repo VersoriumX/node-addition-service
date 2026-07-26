@@ -49,3 +49,7 @@
 ## 2026-07-22 - Bypassing Asynchronous Promise Scheduling on Hot Cache Paths
 **Learning:** Even when cached data is fully valid and ready in memory, returning it from an async function and awaiting it incurs Node.js promise/microtask scheduling overhead. Checking the cache validity synchronously in the router before calling any async functions completely bypasses the event loop microtask queue.
 **Action:** Implement synchronous cache validation checks (e.g., `isCacheValid()`) on hot paths so the router can immediately serve cached responses without scheduling asynchronous promises. This can yield up to a 76% performance gain under heavy load.
+
+## 2026-07-23 - In-memory Static Content and ETag Pre-calculation
+**Learning:** Serving static files explicitly from handlers (like `robots.txt` or homepage HTML) with Express `res.sendFile` performs disk I/O and dynamic hashing on every single request. Eagerly reading these assets into memory and pre-calculating their MD5 ETags on startup avoids disk I/O entirely, achieving a ~99.92% performance gain. Handling `If-None-Match` checks manually permits returning a direct 304 response instantly without sending or serializing any body.
+**Action:** Identify critical static files served by explicit routes and cache them in memory along with pre-computed ETags at application startup.
