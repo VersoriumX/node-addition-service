@@ -27,4 +27,9 @@ describe('Encryption Service', () => {
         expect(() => decrypt(123)).to.throw(TypeError, 'Input must be a string');
         expect(() => decrypt({})).to.throw(TypeError, 'Input must be a string');
     });
+
+    it('should throw RangeError if input to decrypt exceeds 500 characters', () => {
+        const longInput = 'a'.repeat(501);
+        expect(() => decrypt(longInput)).to.throw(RangeError, 'Input length must not exceed 500 characters');
+    });
 });
