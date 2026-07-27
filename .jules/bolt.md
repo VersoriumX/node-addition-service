@@ -1,5 +1,9 @@
 # Bolt's Performance Journal
 
+## 2026-07-25 - High-Performance ETag Comparison in Express APIs
+**Learning:** Performing regex-based header cleaning (such as `.replace(/^W\//, '')`) and string trimming `.trim()` on every HTTP conditional request introduces significant CPU and allocation overhead. A direct equality check (`reqHeader === etag`) serves as an allocation-free fast-path that handles most matching requests instantly. For weak ETags, fast prefix checking via `.startsWith('W/')` and `.slice(2)` completely bypasses the regex engine and yields massive speed improvements.
+**Action:** Implement short-circuit exact matching checks on header inputs first, and use fast built-in string prefix methods instead of regular expressions when parsing standard format headers like HTTP ETags.
+
 ## 2025-05-14 - Sequential Asynchronous File I/O
 **Learning:** Simply making file I/O asynchronous in Node.js can lead to race conditions and data corruption if multiple writes to the same file are triggered concurrently. This is especially critical for data persistence.
 **Action:** Implement a write queue to ensure that asynchronous writes are performed sequentially. This maintains the non-blocking benefits of async I/O while guaranteeing data integrity.
