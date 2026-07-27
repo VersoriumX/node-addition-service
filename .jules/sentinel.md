@@ -28,3 +28,8 @@
 **Vulnerability:** Additions and updates to tokens were not restricted by size or number domain validation. This could lead to Denial of Service (DoS) via database file bloat and memory exhaustion from excessively large names, and JSON serialization anomalies from non-finite numerical values (e.g. `NaN` or `Infinity` being written as `null`).
 **Learning:** Checking parameter type alone is insufficient for robust input validation. String size bounds must be explicitly checked, and numerical bounds/properties (such as being finite) must be enforced to prevent memory exhaustion and data corruption during JSON stringification.
 **Prevention:** Always combine type checks with size bounds (`length <= limit`) and mathematical properties checks (`Number.isFinite`) on all user-controlled inputs.
+
+## 2026-07-24 - Unconstrained Decryption Inputs (DoS)
+**Vulnerability:** The RSA decryption service (`decrypt` in `src/encryption.js` and the `/api/decrypt` endpoint) accepted input ciphertexts of arbitrary lengths, posing a high CPU resource exhaustion (Denial of Service) risk on computationally expensive decryption tasks.
+**Learning:** RSA decryption is highly CPU-intensive. Validating and constraining ciphertext length on the API and service layers (to <= 500 characters, sufficient for standard base64 2048-bit RSA ciphertexts) prevents malicious actors from launching CPU DoS attacks.
+**Prevention:** Enforce strict size bounds on any input parsed by computationally expensive cryptographic algorithms.
