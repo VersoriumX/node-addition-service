@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const add = require('./add');
 const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenmanager');
 const { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache, isMetalCacheValid, isCryptoCacheValid } = require('./src/api');
@@ -10,16 +12,51 @@ const { electricFence } = require('./src/security');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// ⚡ Bolt Optimization: Eagerly load static files on startup and pre-calculate their ETags.
+// This completely avoids disk I/O and MD5 calculation on every request, delivering O(1) in-memory speed.
+const robotsPath = path.join(__dirname, 'public', 'robots.txt');
+const indexHtmlPath = path.join(__dirname, 'public', 'VersoriumX.html');
+
+const robotsContent = fs.readFileSync(robotsPath);
+const indexHtmlContent = fs.readFileSync(indexHtmlPath);
+
+const robotsETag = `"${crypto.createHash('md5').update(robotsContent).digest('hex')}"`;
+const indexHtmlETag = `"${crypto.createHash('md5').update(indexHtmlContent).digest('hex')}"`;
+
+/**
+ * Robust RFC 7232-compliant check for If-None-Match headers.
+ * Safely supports weak ETags (prefixed with W/) and comma-separated lists.
+ */
+function isETagMatch(reqHeader, etag) {
+    if (!reqHeader) return false;
+    const cleanHeader = reqHeader.replace(/^W\//, '').trim();
+    const cleanETag = etag.replace(/^W\//, '').trim();
+    if (cleanHeader === cleanETag) return true;
+    return reqHeader.includes(cleanETag);
+}
+
 // ⚡ Bolt Optimization:
 // Move static file routing and purely static handlers BEFORE payload parsing and security checks.
 // This allows static file requests (/, /robots.txt, and files in public/) to completely bypass
 // JSON parsing and recursive security scanning, reducing CPU overhead and latency.
 app.get('/robots.txt', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+    if (isETagMatch(req.headers['if-none-match'], robotsETag)) {
+        return res.set('ETag', robotsETag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/plain; charset=utf-8',
+        'ETag': robotsETag
+    }).send(robotsContent);
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'VersoriumX.html'));
+    if (isETagMatch(req.headers['if-none-match'], indexHtmlETag)) {
+        return res.set('ETag', indexHtmlETag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'ETag': indexHtmlETag
+    }).send(indexHtmlContent);
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -45,7 +82,7 @@ app.get('/api/tokens', (req, res) => {
         const etag = getAllTokensETag();
 
         // Check for conditional request
-        if (req.headers['if-none-match'] === etag) {
+        if (isETagMatch(req.headers['if-none-match'], etag)) {
             // RFC 7232: 304 response should include the ETag
             return res.set('ETag', etag).status(304).end();
         }
@@ -85,7 +122,7 @@ app.get('/api/prices/metals', async (req, res) => {
         // ⚡ Bolt Optimization: Fast path to bypass promise scheduling if the cache is already valid.
         if (isMetalCacheValid()) {
             const cache = getMetalCache();
-            if (req.headers['if-none-match'] === cache.etag) {
+            if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
                 return res.set('ETag', cache.etag).status(304).end();
             }
             return res.set({
@@ -97,7 +134,7 @@ app.get('/api/prices/metals', async (req, res) => {
         await fetchMetalPrices();
         const cache = getMetalCache();
 
-        if (req.headers['if-none-match'] === cache.etag) {
+        if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
             return res.set('ETag', cache.etag).status(304).end();
         }
 
@@ -116,7 +153,7 @@ app.get('/api/prices/crypto', async (req, res) => {
         // ⚡ Bolt Optimization: Fast path to bypass promise scheduling if the cache is already valid.
         if (isCryptoCacheValid()) {
             const cache = getCryptoCache();
-            if (req.headers['if-none-match'] === cache.etag) {
+            if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
                 return res.set('ETag', cache.etag).status(304).end();
             }
             return res.set({
@@ -128,7 +165,7 @@ app.get('/api/prices/crypto', async (req, res) => {
         await fetchCryptoPrices();
         const cache = getCryptoCache();
 
-        if (req.headers['if-none-match'] === cache.etag) {
+        if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
             return res.set('ETag', cache.etag).status(304).end();
         }
 
@@ -185,6 +222,17 @@ app.get('/api/fuzz', (req, res) => {
     res.json({ variations: generateVariations(input) });
 });
 
-app.listen(port, () => {
-  console.log(`Mesh Service with Electric Fence listening at http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Mesh Service with Electric Fence listening at http://localhost:${port}`);
+  });
+}
+
+module.exports = {
+  app,
+  isETagMatch,
+  robotsContent,
+  indexHtmlContent,
+  robotsETag,
+  indexHtmlETag
+};
