@@ -52,6 +52,15 @@ function checkObject(obj, depth = 0) {
 }
 
 function electricFence(req, res, next) {
+    // 🛡️ Sentinel Security Enhancement: Add standard security headers for defense-in-depth
+    if (res.setHeader) {
+        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline';");
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        res.setHeader('X-XSS-Protection', '1; mode=block');
+    }
+
     const ip = req.ip || (req.socket && req.socket.remoteAddress);
 
     if (quarantinedIPs.has(ip)) {
