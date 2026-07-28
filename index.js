@@ -26,11 +26,17 @@ const indexHtmlETag = `"${crypto.createHash('md5').update(indexHtmlContent).dige
 /**
  * Robust RFC 7232-compliant check for If-None-Match headers.
  * Safely supports weak ETags (prefixed with W/) and comma-separated lists.
+ * ⚡ Bolt Optimization: Highly optimized string comparison and prefix checks
+ * to bypass heavy regex replacement and .trim() allocations on hot path.
  */
 function isETagMatch(reqHeader, etag) {
     if (!reqHeader) return false;
-    const cleanHeader = reqHeader.replace(/^W\//, '').trim();
-    const cleanETag = etag.replace(/^W\//, '').trim();
+    if (reqHeader === etag) return true;
+
+    // Fast prefix slice checks instead of costly regex replacement
+    const cleanHeader = reqHeader.startsWith('W/') ? reqHeader.slice(2) : reqHeader;
+    const cleanETag = etag.startsWith('W/') ? etag.slice(2) : etag;
+
     if (cleanHeader === cleanETag) return true;
     return reqHeader.includes(cleanETag);
 }
