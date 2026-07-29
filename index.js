@@ -12,6 +12,16 @@ const { electricFence } = require('./src/security');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// 🛡️ Sentinel Security Enhancement: Standard HTTP security headers for defense-in-depth.
+app.use((req, res, next) => {
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self'");
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
+
 // ⚡ Bolt Optimization: Eagerly load static files on startup and pre-calculate their ETags.
 // This completely avoids disk I/O and MD5 calculation on every request, delivering O(1) in-memory speed.
 const robotsPath = path.join(__dirname, 'public', 'robots.txt');
@@ -226,6 +236,16 @@ app.get('/api/fuzz', (req, res) => {
         return res.status(400).json({ error: 'Input must be 250 characters or less' });
     }
     res.json({ variations: generateVariations(input) });
+});
+
+// 🛡️ Sentinel Security Enhancement: Global error handling middleware.
+// Intercepts malformed payloads/syntax errors to avoid exposing internal stack traces.
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+    console.error('Unhandled server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
 });
 
 if (require.main === module) {

@@ -51,6 +51,14 @@ describe('Static File Caching & Routes', () => {
             expect(res.status).to.equal(200);
             expect(res.headers.get('etag')).to.equal(robotsETag);
             expect(res.headers.get('content-type')).to.contain('text/plain');
+
+            // 🛡️ Sentinel: Verify security headers
+            expect(res.headers.get('content-security-policy')).to.contain("default-src 'self'");
+            expect(res.headers.get('x-frame-options')).to.equal('DENY');
+            expect(res.headers.get('x-content-type-options')).to.equal('nosniff');
+            expect(res.headers.get('referrer-policy')).to.equal('no-referrer');
+            expect(res.headers.get('x-xss-protection')).to.equal('1; mode=block');
+
             const body = await res.text();
             expect(body).to.equal(robotsContent.toString());
         });
@@ -82,6 +90,14 @@ describe('Static File Caching & Routes', () => {
             expect(res.status).to.equal(200);
             expect(res.headers.get('etag')).to.equal(indexHtmlETag);
             expect(res.headers.get('content-type')).to.contain('text/html');
+
+            // 🛡️ Sentinel: Verify security headers
+            expect(res.headers.get('content-security-policy')).to.contain("default-src 'self'");
+            expect(res.headers.get('x-frame-options')).to.equal('DENY');
+            expect(res.headers.get('x-content-type-options')).to.equal('nosniff');
+            expect(res.headers.get('referrer-policy')).to.equal('no-referrer');
+            expect(res.headers.get('x-xss-protection')).to.equal('1; mode=block');
+
             const body = await res.text();
             expect(body).to.equal(indexHtmlContent.toString());
         });
@@ -104,6 +120,21 @@ describe('Static File Caching & Routes', () => {
             });
             expect(res.status).to.equal(304);
             expect(res.headers.get('etag')).to.equal(indexHtmlETag);
+        });
+    });
+
+    describe('Global Error Handler', () => {
+        it('should handle malformed JSON and return 400 with a clean message', async () => {
+            const res = await fetch(`${baseUrl}/api/tokens`, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: '{ malformed json '
+            });
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Invalid JSON payload');
         });
     });
 });
