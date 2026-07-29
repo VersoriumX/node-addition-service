@@ -7,11 +7,21 @@ describe('Electric Fence Security Middleware', () => {
         quarantinedIPs.clear();
     });
 
-    it('should allow normal requests', (done) => {
+    it('should allow normal requests and set security headers if res.setHeader is present', (done) => {
         const req = { query: { a: '1', b: '2' }, body: {}, ip: '1.2.3.4' };
-        const res = {};
+        const headers = {};
+        const res = {
+            setHeader: (key, val) => {
+                headers[key] = val;
+            }
+        };
         const next = () => {
             expect(quarantinedIPs.has('1.2.3.4')).to.be.false;
+            expect(headers['Content-Security-Policy']).to.exist;
+            expect(headers['X-Frame-Options']).to.equal('DENY');
+            expect(headers['X-Content-Type-Options']).to.equal('nosniff');
+            expect(headers['Referrer-Policy']).to.equal('no-referrer');
+            expect(headers['X-XSS-Protection']).to.equal('1; mode=block');
             done();
         };
         electricFence(req, res, next);
