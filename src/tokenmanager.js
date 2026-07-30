@@ -47,6 +47,10 @@ function addToken(name, value) {
     if (typeof name !== 'string' || name.length > 100 || typeof value !== 'number' || !Number.isFinite(value)) {
         throw new Error('Invalid token name or value');
     }
+    const nameRegex = /^[a-zA-Z0-9\s._-]+$/;
+    if (!nameRegex.test(name)) {
+        throw new Error('Invalid token name: contains invalid characters');
+    }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
     }

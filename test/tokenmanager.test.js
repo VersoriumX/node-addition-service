@@ -36,4 +36,9 @@ describe('Token Manager', () => {
         expect(() => updateToken('UpdateFiniteCheck', -Infinity)).to.throw('Invalid token value');
         deleteToken('UpdateFiniteCheck');
     });
+
+    it('should reject a token name with invalid/malicious characters', () => {
+        expect(() => addToken('<script>alert(1)</script>', 100)).to.throw('Invalid token name: contains invalid characters');
+        expect(() => addToken('TokenName$', 100)).to.throw('Invalid token name: contains invalid characters');
+    });
 });
