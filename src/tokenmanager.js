@@ -42,10 +42,14 @@ function updateCache() {
 updateCache();
 
 const SENSITIVE_KEYS = ['__proto__', 'constructor', 'prototype'];
+const SAFE_NAME_PATTERN = /^[a-zA-Z0-9\s._-]+$/;
 
 function addToken(name, value) {
     if (typeof name !== 'string' || name.length > 100 || typeof value !== 'number' || !Number.isFinite(value)) {
         throw new Error('Invalid token name or value');
+    }
+    if (!SAFE_NAME_PATTERN.test(name)) {
+        throw new Error('Invalid token name: contains unsafe characters');
     }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');

@@ -23,6 +23,19 @@ describe('Token Manager', () => {
         expect(() => addToken(longName, 100)).to.throw('Invalid token name or value');
     });
 
+    it('should reject a token name containing unsafe characters', () => {
+        expect(() => addToken('Token<script>', 100)).to.throw('Invalid token name: contains unsafe characters');
+        expect(() => addToken('Token$', 100)).to.throw('Invalid token name: contains unsafe characters');
+        expect(() => addToken('Token#1', 100)).to.throw('Invalid token name: contains unsafe characters');
+        expect(() => addToken('Token&Co', 100)).to.throw('Invalid token name: contains unsafe characters');
+    });
+
+    it('should allow valid token names', () => {
+        addToken('Valid-Token_Name.123', 50);
+        expect(getTokenValue('Valid-Token_Name.123')).to.equal(50);
+        deleteToken('Valid-Token_Name.123');
+    });
+
     it('should reject non-finite values in addToken', () => {
         expect(() => addToken('FiniteCheck', NaN)).to.throw('Invalid token name or value');
         expect(() => addToken('FiniteCheck', Infinity)).to.throw('Invalid token name or value');
