@@ -26,12 +26,18 @@ app.use((req, res, next) => {
 // This completely avoids disk I/O and MD5 calculation on every request, delivering O(1) in-memory speed.
 const robotsPath = path.join(__dirname, 'public', 'robots.txt');
 const indexHtmlPath = path.join(__dirname, 'public', 'VersoriumX.html');
+const rareEarthPath = path.join(__dirname, 'public', 'rareearth.html');
+const isolationPath = path.join(__dirname, 'public', 'isolation.json');
 
 const robotsContent = fs.readFileSync(robotsPath);
 const indexHtmlContent = fs.readFileSync(indexHtmlPath);
+const rareEarthContent = fs.readFileSync(rareEarthPath);
+const isolationContent = fs.readFileSync(isolationPath);
 
 const robotsETag = `"${crypto.createHash('md5').update(robotsContent).digest('hex')}"`;
 const indexHtmlETag = `"${crypto.createHash('md5').update(indexHtmlContent).digest('hex')}"`;
+const rareEarthETag = `"${crypto.createHash('md5').update(rareEarthContent).digest('hex')}"`;
+const isolationETag = `"${crypto.createHash('md5').update(isolationContent).digest('hex')}"`;
 
 /**
  * Robust RFC 7232-compliant check for If-None-Match headers.
@@ -73,6 +79,36 @@ app.get('/', (req, res) => {
         'Content-Type': 'text/html; charset=utf-8',
         'ETag': indexHtmlETag
     }).send(indexHtmlContent);
+});
+
+app.get('/VersoriumX.html', (req, res) => {
+    if (isETagMatch(req.headers['if-none-match'], indexHtmlETag)) {
+        return res.set('ETag', indexHtmlETag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'ETag': indexHtmlETag
+    }).send(indexHtmlContent);
+});
+
+app.get('/rareearth.html', (req, res) => {
+    if (isETagMatch(req.headers['if-none-match'], rareEarthETag)) {
+        return res.set('ETag', rareEarthETag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'text/html; charset=utf-8',
+        'ETag': rareEarthETag
+    }).send(rareEarthContent);
+});
+
+app.get('/isolation.json', (req, res) => {
+    if (isETagMatch(req.headers['if-none-match'], isolationETag)) {
+        return res.set('ETag', isolationETag).status(304).end();
+    }
+    res.set({
+        'Content-Type': 'application/json; charset=utf-8',
+        'ETag': isolationETag
+    }).send(isolationContent);
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -260,5 +296,9 @@ module.exports = {
   robotsContent,
   indexHtmlContent,
   robotsETag,
-  indexHtmlETag
+  indexHtmlETag,
+  rareEarthContent,
+  isolationContent,
+  rareEarthETag,
+  isolationETag
 };
