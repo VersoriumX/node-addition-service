@@ -1,4 +1,7 @@
-const fetch = require('node-fetch');
+let fetch = require('node-fetch');
+if (fetch && fetch.default) {
+    fetch = fetch.default;
+}
 const crypto = require('crypto');
 const config = require('./config');
 

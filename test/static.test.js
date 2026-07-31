@@ -1,7 +1,10 @@
 const { describe, it, before, after } = require('mocha');
 const { expect } = require('chai');
 const http = require('http');
-const fetch = require('node-fetch');
+let fetch = require('node-fetch');
+if (fetch && fetch.default) {
+    fetch = fetch.default;
+}
 const { app, isETagMatch, robotsETag, indexHtmlETag, robotsContent, indexHtmlContent } = require('../index');
 
 describe('Static File Caching & Routes', () => {
