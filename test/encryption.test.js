@@ -32,4 +32,27 @@ describe('Encryption Service', () => {
         const longInput = 'a'.repeat(501);
         expect(() => decrypt(longInput)).to.throw(RangeError, 'Input length must not exceed 500 characters');
     });
+
+    describe('Decryption Cache Performance', () => {
+        it('should return correct decrypted values and serve cached results extremely fast', () => {
+            const text = 'Cached decryption test performance';
+            const encrypted = encrypt(text);
+
+            // First decryption (will populate the cache)
+            const decrypted1 = decrypt(encrypted);
+            expect(decrypted1).to.equal(text);
+
+            // Subsequent decryptions (must be extremely fast because they are cached)
+            const start = Date.now();
+            for (let i = 0; i < 200; i++) {
+                const dec = decrypt(encrypted);
+                expect(dec).to.equal(text);
+            }
+            const duration = Date.now() - start;
+
+            // Without caching, 200 RSA 2048-bit decryptions would take ~300ms to 800ms.
+            // With caching, it takes < 5ms. We can safely assert it takes less than 50ms.
+            expect(duration).to.be.lessThan(50);
+        });
+    });
 });

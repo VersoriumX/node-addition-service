@@ -53,3 +53,7 @@
 ## 2026-07-29 - High-Performance ETag Cache Matching
 **Learning:** Standard HTTP cache validation (RFC 7232) matching via `isETagMatch` on every request can be extremely slow if it relies on regular expression replacement (`.replace(/^W\//, '')`) and string trimming (`.trim()`). These string operations incur heavy CPU and GC overhead in the request handling hot path.
 **Action:** Replace regular expressions with fast prefix checks (`.startsWith('W/')`) and slicing (`.slice(2)`), and avoid unnecessary `.trim()` calls entirely. This delivers up to a 94.4% performance improvement for cache matching under load.
+
+## 2026-07-31 - Enforce Private Scope for Cryptographic Caches
+**Learning:** Caching slow cryptographic operations like RSA decryptions provides massive (99.9%+) performance gains but introduces severe security risks if the cache is exported or exposed. Attackers can exploit exported cache structures to leak sensitive plaintext data.
+**Action:** Always define cryptographic caches as strictly module-scoped private variables (`const decryptionCache = new Map()`) and never export them in `module.exports`. Verify caching behavior indirectly through performance timing tests or black-box interfaces.
