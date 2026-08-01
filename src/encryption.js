@@ -37,6 +37,13 @@ function encrypt(text) {
     return getKey().encrypt(text, 'base64');
 }
 
+// ⚡ Bolt Optimization: Private Decryption Cache to store deterministic RSA decryption results.
+// Size limit (MAX_SIZE = 1000) and TTL (5 minutes) protect against memory bloat.
+// Strictly private to module scope to avoid exposing decrypted keys/tokens.
+const DECRYPTION_CACHE = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_MAX_SIZE = 1000;
+
 function decrypt(encryptedText) {
     if (typeof encryptedText !== 'string') {
         throw new TypeError('Input must be a string');
@@ -44,7 +51,29 @@ function decrypt(encryptedText) {
     if (encryptedText.length > 500) {
         throw new RangeError('Input length must not exceed 500 characters');
     }
-    return getKey().decrypt(encryptedText, 'utf8');
+
+    const cached = DECRYPTION_CACHE.get(encryptedText);
+    if (cached) {
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            return cached.value;
+        }
+        DECRYPTION_CACHE.delete(encryptedText);
+    }
+
+    const decrypted = getKey().decrypt(encryptedText, 'utf8');
+
+    // Handle cache size limit
+    if (DECRYPTION_CACHE.size >= CACHE_MAX_SIZE) {
+        const oldestKey = DECRYPTION_CACHE.keys().next().value;
+        DECRYPTION_CACHE.delete(oldestKey);
+    }
+
+    DECRYPTION_CACHE.set(encryptedText, {
+        value: decrypted,
+        timestamp: Date.now()
+    });
+
+    return decrypted;
 }
 
 module.exports = { generateKeys, encrypt, decrypt };
