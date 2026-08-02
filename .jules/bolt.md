@@ -53,3 +53,7 @@
 ## 2026-07-29 - High-Performance ETag Cache Matching
 **Learning:** Standard HTTP cache validation (RFC 7232) matching via `isETagMatch` on every request can be extremely slow if it relies on regular expression replacement (`.replace(/^W\//, '')`) and string trimming (`.trim()`). These string operations incur heavy CPU and GC overhead in the request handling hot path.
 **Action:** Replace regular expressions with fast prefix checks (`.startsWith('W/')`) and slicing (`.slice(2)`), and avoid unnecessary `.trim()` calls entirely. This delivers up to a 94.4% performance improvement for cache matching under load.
+
+## 2026-07-30 - Mocking Prototypes of Cryptographic Dependencies to Avoid Test Timeouts
+**Learning:** Testing size-limit evictions (e.g., 1000 elements) in caches that store results of expensive cryptographic operations (like 2048-bit RSA decryption) will cause test timeouts if actual encryptions and decryptions are executed, since even minor overheads accumulate over 1000 iterations.
+**Action:** Mock the prototype method of the external dependency class (e.g., `require('node-rsa').NodeRSA.prototype.decrypt`) during the eviction test to return mock values instantly. This bypasses the heavy mathematical computations, reducing test runtime from several seconds to less than 2ms, while still thoroughly validating the cache's FIFO/LRU eviction behavior.
