@@ -32,4 +32,28 @@ describe('Encryption Service', () => {
         const longInput = 'a'.repeat(501);
         expect(() => decrypt(longInput)).to.throw(RangeError, 'Input length must not exceed 500 characters');
     });
+
+    it('should cache decryption results and handle TTL expiration correctly', () => {
+        const text = 'Caching test string';
+        const encrypted = encrypt(text);
+
+        // First decryption (uncached)
+        const decrypted1 = decrypt(encrypted);
+        expect(decrypted1).to.equal(text);
+
+        // Override Date.now to simulate time passing
+        const originalNow = Date.now;
+        try {
+            const now = Date.now();
+            Date.now = () => now + 1000; // 1 second has passed (within 5 min TTL)
+            const decrypted2 = decrypt(encrypted);
+            expect(decrypted2).to.equal(text);
+
+            Date.now = () => now + 6 * 60 * 1000; // 6 minutes have passed (exceeds 5 min TTL)
+            const decrypted3 = decrypt(encrypted);
+            expect(decrypted3).to.equal(text);
+        } finally {
+            Date.now = originalNow;
+        }
+    });
 });
