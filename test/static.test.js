@@ -3,7 +3,7 @@ const { expect } = require('chai');
 const http = require('http');
 const fetchRaw = require('node-fetch');
 const fetch = fetchRaw.default || fetchRaw;
-const { app, isETagMatch, robotsETag, indexHtmlETag, robotsContent, indexHtmlContent } = require('../index');
+const { app, isETagMatch, robotsETag, indexHtmlETag, robotsContent, indexHtmlContent, rareearthContent, rareearthETag, isolationContent, isolationETag } = require('../index');
 
 describe('Static File Caching & Routes', () => {
     let server;
@@ -121,6 +121,58 @@ describe('Static File Caching & Routes', () => {
             });
             expect(res.status).to.equal(304);
             expect(res.headers.get('etag')).to.equal(indexHtmlETag);
+        });
+    });
+
+    describe('GET /rareearth.html', () => {
+        it('should return 200 with the correct rareearth content and ETag', async () => {
+            const res = await fetch(`${baseUrl}/rareearth.html`);
+            expect(res.status).to.equal(200);
+            expect(res.headers.get('etag')).to.equal(rareearthETag);
+            expect(res.headers.get('content-type')).to.contain('text/html');
+
+            // Verify security headers are set
+            expect(res.headers.get('content-security-policy')).to.contain("default-src 'self'");
+            expect(res.headers.get('x-frame-options')).to.equal('DENY');
+
+            const body = await res.text();
+            expect(body).to.equal(rareearthContent.toString());
+        });
+
+        it('should return 304 when conditional If-None-Match header matches rareearthETag', async () => {
+            const res = await fetch(`${baseUrl}/rareearth.html`, {
+                headers: {
+                    'if-none-match': rareearthETag
+                }
+            });
+            expect(res.status).to.equal(304);
+            expect(res.headers.get('etag')).to.equal(rareearthETag);
+        });
+    });
+
+    describe('GET /isolation.json', () => {
+        it('should return 200 with the correct isolation content and ETag', async () => {
+            const res = await fetch(`${baseUrl}/isolation.json`);
+            expect(res.status).to.equal(200);
+            expect(res.headers.get('etag')).to.equal(isolationETag);
+            expect(res.headers.get('content-type')).to.contain('application/json');
+
+            // Verify security headers are set
+            expect(res.headers.get('content-security-policy')).to.contain("default-src 'self'");
+            expect(res.headers.get('x-frame-options')).to.equal('DENY');
+
+            const body = await res.text();
+            expect(body).to.equal(isolationContent.toString());
+        });
+
+        it('should return 304 when conditional If-None-Match header matches isolationETag', async () => {
+            const res = await fetch(`${baseUrl}/isolation.json`, {
+                headers: {
+                    'if-none-match': isolationETag
+                }
+            });
+            expect(res.status).to.equal(304);
+            expect(res.headers.get('etag')).to.equal(isolationETag);
         });
     });
 
