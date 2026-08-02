@@ -38,3 +38,8 @@
 **Vulnerability:** The application did not set standard HTTP security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection), leaving the homepage and API routes vulnerable to Clickjacking, XSS, and MIME-sniffing. Additionally, malformed JSON body payloads caused Express's default error handler to leak stack traces and server-side folder structures in HTML responses.
 **Learning:** Security middleware like `electricFence` is bypassed by highly optimized static handlers defined earlier in the middleware pipeline. Placing a global security headers middleware at the very top of the app stack ensures that all responses (including cached HTML/static assets) are fully secured. Likewise, registering a global error-handling middleware at the very bottom catches internal SyntaxError exceptions from parsed JSON and prevents raw stack trace leakages.
 **Prevention:** Always deploy security headers globally at the absolute top of the middleware stack and configure a robust global error-handling middleware to intercept syntax parsing failures gracefully.
+
+## 2026-07-26 - ReDoS Key Injection Vulnerability
+**Vulnerability:** While `electricFence` middleware scanned nested object values recursively, it completely omitted scanning the keys of JSON payloads, leaving a bypass vector where malicious ReDoS payloads in object keys could evade inspection.
+**Learning:** Attackers can inject payloads not just in request values but also in request keys when Express or middleware processes user inputs dynamically or recursively.
+**Prevention:** Always scan object keys in addition to values when traversing user-supplied JSON or request data structures.

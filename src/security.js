@@ -41,6 +41,9 @@ function checkObject(obj, depth = 0) {
 
     for (const key in obj) {
         if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+        // 🛡️ Sentinel Security Enhancement: Scan object keys as well as values
+        if (checkValue(key)) return true;
+
         const val = obj[key];
         if (typeof val === 'string') {
             if (checkValue(val)) return true;
