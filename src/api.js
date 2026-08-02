@@ -1,4 +1,5 @@
-const fetch = require('node-fetch');
+const fetchRaw = require('node-fetch');
+const fetch = fetchRaw.default || fetchRaw;
 const crypto = require('crypto');
 const config = require('./config');
 

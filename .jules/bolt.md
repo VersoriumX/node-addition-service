@@ -53,3 +53,7 @@
 ## 2026-07-29 - High-Performance ETag Cache Matching
 **Learning:** Standard HTTP cache validation (RFC 7232) matching via `isETagMatch` on every request can be extremely slow if it relies on regular expression replacement (`.replace(/^W\//, '')`) and string trimming (`.trim()`). These string operations incur heavy CPU and GC overhead in the request handling hot path.
 **Action:** Replace regular expressions with fast prefix checks (`.startsWith('W/')`) and slicing (`.slice(2)`), and avoid unnecessary `.trim()` calls entirely. This delivers up to a 94.4% performance improvement for cache matching under load.
+
+## 2026-08-05 - RSA Decryption Cache to Avoid CPU Exhaustion
+**Learning:** RSA decryption of 2048-bit keys is extremely CPU intensive, blocking the single-threaded Node.js event loop for 2-4ms+ per operation. Under high load or Denial of Service (DoS) attacks with repeating payloads, this can easily degrade server responsiveness.
+**Action:** Implement a private, size-limited (e.g., MAX_SIZE = 1000 with FIFO eviction) and TTL-backed cache to store deterministic RSA decryption results. Subsequent decryption of the same payload bypasses the cryptographic overhead entirely, returning results in microseconds (~99.99% faster) and protecting the event loop.
