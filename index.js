@@ -80,11 +80,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(electricFence); // Apply Electric Fence Security Middleware
 
-// Original legacy route
+// Original legacy route with strict input validation
 app.get('/add', (req, res) => {
-  const a = parseInt(req.query.a);
-  const b = parseInt(req.query.b);
-  res.send(`Hello World!: ${add(a, b)}`);
+  const { a, b } = req.query;
+
+  // 🛡️ Sentinel: Input validation to prevent NaN, injection, and denial of service.
+  if (a === undefined || b === undefined) {
+    return res.status(400).json({ error: 'Parameters a and b are required' });
+  }
+
+  // Ensure they are strings and of reasonable length to prevent any ReDoS or CPU/memory abuse
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length > 20 || b.length > 20) {
+    return res.status(400).json({ error: 'Parameters a and b must be strings under 20 characters' });
+  }
+
+  const parsedA = Number(a);
+  const parsedB = Number(b);
+
+  if (!Number.isFinite(parsedA) || !Number.isFinite(parsedB)) {
+    return res.status(400).json({ error: 'Parameters a and b must be valid finite numbers' });
+  }
+
+  res.send(`Hello World!: ${add(parsedA, parsedB)}`);
 });
 
 /**
