@@ -1,7 +1,8 @@
 const { describe, it, before, after } = require('mocha');
 const { expect } = require('chai');
 const http = require('http');
-const fetch = require('node-fetch');
+const nodeFetch = require('node-fetch');
+const fetch = nodeFetch.default || nodeFetch;
 const { app, isETagMatch, robotsETag, indexHtmlETag, robotsContent, indexHtmlContent } = require('../index');
 
 describe('Static File Caching & Routes', () => {
@@ -135,6 +136,37 @@ describe('Static File Caching & Routes', () => {
             expect(res.status).to.equal(400);
             const data = await res.json();
             expect(data).to.have.property('error', 'Invalid JSON payload');
+        });
+    });
+
+    describe('GET /add with strict input validation', () => {
+        it('should return 200 with correct sum for valid inputs', async () => {
+            const res = await fetch(`${baseUrl}/add?a=12&b=34`);
+            expect(res.status).to.equal(200);
+            const text = await res.text();
+            expect(text).to.equal('Hello World!: 46');
+        });
+
+        it('should return 400 when parameters are missing', async () => {
+            const res = await fetch(`${baseUrl}/add?a=12`);
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Parameters a and b are required');
+        });
+
+        it('should return 400 when parameters are not finite numbers', async () => {
+            const res = await fetch(`${baseUrl}/add?a=12&b=abc`);
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Parameters a and b must be valid finite numbers');
+        });
+
+        it('should return 400 when parameters exceed length of 20 characters', async () => {
+            const longVal = '1'.repeat(21);
+            const res = await fetch(`${baseUrl}/add?a=12&b=${longVal}`);
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Parameters a and b must be strings under 20 characters');
         });
     });
 });
