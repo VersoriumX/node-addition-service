@@ -80,11 +80,35 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(electricFence); // Apply Electric Fence Security Middleware
 
-// Original legacy route
+// Original legacy route with security hardening
 app.get('/add', (req, res) => {
-  const a = parseInt(req.query.a);
-  const b = parseInt(req.query.b);
-  res.send(`Hello World!: ${add(a, b)}`);
+  const { a, b } = req.query;
+
+  if (a === undefined || b === undefined) {
+    return res.status(400).json({ error: 'Parameters a and b are required' });
+  }
+
+  if (typeof a !== 'string' || typeof b !== 'string') {
+    return res.status(400).json({ error: 'Parameters a and b must be strings' });
+  }
+
+  if (a.length > 20 || b.length > 20) {
+    return res.status(400).json({ error: 'Parameters must not exceed 20 characters' });
+  }
+
+  // Enforce that they represent valid finite integer numbers
+  if (!/^-?\d+$/.test(a) || !/^-?\d+$/.test(b)) {
+    return res.status(400).json({ error: 'Parameters a and b must be valid integers' });
+  }
+
+  const numA = parseInt(a, 10);
+  const numB = parseInt(b, 10);
+
+  if (!Number.isFinite(numA) || !Number.isFinite(numB)) {
+    return res.status(400).json({ error: 'Parameters a and b must be valid finite numbers' });
+  }
+
+  res.send(`Hello World!: ${add(numA, numB)}`);
 });
 
 /**
