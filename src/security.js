@@ -14,11 +14,13 @@ function checkValue(val) {
         // Simple length check - common ReDoS payloads are often very long
         if (val.length > 1000) return true;
 
-        // ⚡ Bolt Optimization: Replace regex match(/\*\*/g) with faster indexOf loop
-        // for counting suspicious globstar patterns.
-        if (val.includes('**')) {
-            let count = 0;
-            let pos = val.indexOf('**');
+        // ⚡ Bolt Optimization: Replace redundant includes() and indexOf() scans
+        // with a single-pass indexOf() loop. This completely avoids double-scanning the string
+        // for incoming request query and body payloads, improving speed and efficiency.
+        let pos = val.indexOf('**');
+        if (pos !== -1) {
+            let count = 1;
+            pos = val.indexOf('**', pos + 2);
             while (pos !== -1) {
                 count++;
                 if (count > 2) return true;
