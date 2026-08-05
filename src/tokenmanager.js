@@ -42,6 +42,7 @@ function updateCache() {
 updateCache();
 
 const SENSITIVE_KEYS = ['__proto__', 'constructor', 'prototype'];
+const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
 
 function addToken(name, value) {
     if (typeof name !== 'string' || name.length > 100 || typeof value !== 'number' || !Number.isFinite(value)) {
@@ -49,6 +50,9 @@ function addToken(name, value) {
     }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
+    }
+    if (!SAFE_NAME_REGEX.test(name)) {
+        throw new Error('Invalid token name: contains invalid characters');
     }
     tokens[name] = value;
     updateCache();
@@ -105,6 +109,9 @@ function updateToken(name, value) {
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
+    if (!SAFE_NAME_REGEX.test(name)) {
+        throw new Error('Invalid token name: contains invalid characters');
+    }
     if (tokens[name] !== undefined) {
         if (typeof value !== 'number' || !Number.isFinite(value)) {
             throw new Error('Invalid token value');
@@ -120,6 +127,9 @@ function updateToken(name, value) {
 function deleteToken(name) {
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
+    }
+    if (!SAFE_NAME_REGEX.test(name)) {
+        throw new Error('Invalid token name: contains invalid characters');
     }
     if (tokens[name] !== undefined) {
         delete tokens[name];
