@@ -5,6 +5,7 @@ const { electricFence } = require('./src/security');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 
 const app = express();
+app.disable('x-powered-by');
 const PORT = process.env.PORT || 3000;
 
 // Middleware

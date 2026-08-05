@@ -10,6 +10,7 @@ const { generateVariations } = require('./src/fuzzer');
 const { electricFence } = require('./src/security');
 
 const app = express();
+app.disable('x-powered-by');
 const port = process.env.PORT || 3000;
 
 // 🛡️ Sentinel Security Enhancement: Standard HTTP security headers for defense-in-depth.

@@ -59,6 +59,7 @@ describe('Static File Caching & Routes', () => {
             expect(res.headers.get('x-content-type-options')).to.equal('nosniff');
             expect(res.headers.get('referrer-policy')).to.equal('no-referrer');
             expect(res.headers.get('x-xss-protection')).to.equal('1; mode=block');
+            expect(res.headers.get('x-powered-by')).to.be.null;
 
             const body = await res.text();
             expect(body).to.equal(robotsContent.toString());
@@ -98,6 +99,7 @@ describe('Static File Caching & Routes', () => {
             expect(res.headers.get('x-content-type-options')).to.equal('nosniff');
             expect(res.headers.get('referrer-policy')).to.equal('no-referrer');
             expect(res.headers.get('x-xss-protection')).to.equal('1; mode=block');
+            expect(res.headers.get('x-powered-by')).to.be.null;
 
             const body = await res.text();
             expect(body).to.equal(indexHtmlContent.toString());
