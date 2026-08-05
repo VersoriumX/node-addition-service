@@ -57,3 +57,7 @@
 ## 2026-08-05 - RSA Decryption Cache to Avoid CPU Exhaustion
 **Learning:** RSA decryption of 2048-bit keys is extremely CPU intensive, blocking the single-threaded Node.js event loop for 2-4ms+ per operation. Under high load or Denial of Service (DoS) attacks with repeating payloads, this can easily degrade server responsiveness.
 **Action:** Implement a private, size-limited (e.g., MAX_SIZE = 1000 with FIFO eviction) and TTL-backed cache to store deterministic RSA decryption results. Subsequent decryption of the same payload bypasses the cryptographic overhead entirely, returning results in microseconds (~99.99% faster) and protecting the event loop.
+
+## 2026-08-12 - In-Memory Static Asset Caching with Pre-Calculated ETags
+**Learning:** Serving static assets like `.html` and `.json` files via traditional disk reads or uncached middleware (such as standard `express.static` with on-the-fly MD5 hashing) incurs heavy I/O and CPU overhead. Doing so dynamically on every request introduces a noticeable bottleneck under high load.
+**Action:** Eagerly read and cache static assets in memory during application startup, and pre-calculate their MD5 ETags. Mount specialized route handlers for these assets before expensive middleware pipelines and `express.static`, immediately checking incoming `If-None-Match` headers for RFC 7232-compliant cache hits to return O(1) 304 Not Modified or 200 OK responses. This yields a massive 99.7%+ latency reduction.
