@@ -43,3 +43,8 @@
 **Vulnerability:** While `electricFence` middleware scanned nested object values recursively, it completely omitted scanning the keys of JSON payloads, leaving a bypass vector where malicious ReDoS payloads in object keys could evade inspection.
 **Learning:** Attackers can inject payloads not just in request values but also in request keys when Express or middleware processes user inputs dynamically or recursively.
 **Prevention:** Always scan object keys in addition to values when traversing user-supplied JSON or request data structures.
+
+## 2026-07-27 - Express Query Param Array/Object Hijacking (TypeError/NaN Injection)
+**Vulnerability:** The legacy `/add` endpoint processed query parameters `a` and `b` using `parseInt()` without verifying if they were simple strings, present, or of reasonable length. Attackers could send multiple instances of `a` or `b` causing Express to parse them as arrays (e.g., `?a=1&a=2`), leading to unexpected return values or potential TypeErrors/NaN values.
+**Learning:** Express's default query parser can automatically construct arrays or objects from query string parameters. Assuming parameters are always primitive strings without explicit type and length checks can result in downstream runtime crashes or incorrect mathematical logic (e.g., NaN injection).
+**Prevention:** Always explicitly check that user-supplied query parameters are present, strictly of type `string`, adhere to a strict length limit, and validate against a strict numeric format (such as `/^-?\d+$/`) before parsing or performing operations on them.

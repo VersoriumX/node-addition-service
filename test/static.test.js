@@ -201,4 +201,57 @@ describe('Static File Caching & Routes', () => {
             expect(data).to.have.property('error', 'Invalid JSON payload');
         });
     });
+
+    describe('GET /add', () => {
+        it('should return 200 and the correct sum for valid positive and negative integers', async () => {
+            const res = await fetch(`${baseUrl}/add?a=12&b=34`);
+            expect(res.status).to.equal(200);
+            const text = await res.text();
+            expect(text).to.equal('Hello World!: 46');
+
+            const res2 = await fetch(`${baseUrl}/add?a=-5&b=10`);
+            expect(res2.status).to.equal(200);
+            const text2 = await res2.text();
+            expect(text2).to.equal('Hello World!: 5');
+        });
+
+        it('should return 400 when parameters a or b are missing', async () => {
+            const res = await fetch(`${baseUrl}/add?a=12`);
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Parameters a and b are required');
+        });
+
+        it('should return 400 when parameters are not simple strings (e.g. arrays)', async () => {
+            const res = await fetch(`${baseUrl}/add?a=12&a=24&b=34`);
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Parameters a and b must be strings');
+        });
+
+        it('should return 400 when parameter length exceeds 20 characters', async () => {
+            const longParam = '1'.repeat(21);
+            const res = await fetch(`${baseUrl}/add?a=${longParam}&b=34`);
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Parameters must not exceed 20 characters');
+        });
+
+        it('should return 400 when parameters are not valid integer strings', async () => {
+            const res1 = await fetch(`${baseUrl}/add?a=12abc&b=34`);
+            expect(res1.status).to.equal(400);
+            const data1 = await res1.json();
+            expect(data1).to.have.property('error', 'Parameters a and b must be valid integers');
+
+            const res2 = await fetch(`${baseUrl}/add?a=12.3&b=34`);
+            expect(res2.status).to.equal(400);
+            const data2 = await res2.json();
+            expect(data2).to.have.property('error', 'Parameters a and b must be valid integers');
+
+            const res3 = await fetch(`${baseUrl}/add?a=&b=34`);
+            expect(res3.status).to.equal(400);
+            const data3 = await res3.json();
+            expect(data3).to.have.property('error', 'Parameters a and b must be valid integers');
+        });
+    });
 });
