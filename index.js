@@ -7,7 +7,7 @@ const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenman
 const { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache, isMetalCacheValid, isCryptoCacheValid } = require('./src/api');
 const { encrypt, decrypt } = require('./src/encryption');
 const { generateVariations } = require('./src/fuzzer');
-const { electricFence } = require('./src/security');
+const { electricFence, rateLimiter } = require('./src/security');
 
 const app = express();
 app.disable('x-powered-by');
@@ -106,6 +106,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(express.json());
 app.use(electricFence); // Apply Electric Fence Security Middleware
+app.use('/api', rateLimiter); // Apply Rate Limiter specifically to API endpoints
 
 // Original legacy route
 app.get('/add', (req, res) => {

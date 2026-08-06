@@ -85,4 +85,40 @@ function electricFence(req, res, next) {
     next();
 }
 
-module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs };
+// Lightweight, in-memory rate limiting to protect sensitive API endpoints from abuse and DoS.
+const ipRequestCounts = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute window
+const MAX_REQUESTS = 100; // 100 requests per minute
+
+function rateLimiter(req, res, next) {
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    const now = Date.now();
+
+    let clientData = ipRequestCounts.get(ip);
+    if (!clientData) {
+        clientData = { count: 1, resetTime: now + RATE_LIMIT_WINDOW };
+        ipRequestCounts.set(ip, clientData);
+    } else {
+        if (now > clientData.resetTime) {
+            clientData.count = 1;
+            clientData.resetTime = now + RATE_LIMIT_WINDOW;
+        } else {
+            clientData.count++;
+        }
+    }
+
+    if (res.setHeader) {
+        // Set standard RateLimit headers
+        res.setHeader('X-RateLimit-Limit', MAX_REQUESTS);
+        res.setHeader('X-RateLimit-Remaining', Math.max(0, MAX_REQUESTS - clientData.count));
+        res.setHeader('X-RateLimit-Reset', Math.ceil(clientData.resetTime / 1000));
+    }
+
+    if (clientData.count > MAX_REQUESTS) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+
+    next();
+}
+
+module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs, rateLimiter, ipRequestCounts };
