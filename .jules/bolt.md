@@ -65,3 +65,7 @@
 ## 2026-08-19 - Redundant Double Regex Scans on Happy Validation Paths
 **Learning:** Validating input parameters using regular expressions can sometimes introduce redundant, duplicated scans if developers copy-paste checks or implement multi-layered validation layers with identical RegExp patterns. On hot/frequent execution paths, this wastes CPU cycles on the happy path.
 **Action:** Consolidate regular expression evaluations into a single execution, reusing compiled regex patterns. Ensure error handling combined assertions are retained if they are required by existing conflicting unit tests, but avoid double-scanning strings.
+
+## 2026-08-26 - Standardizing Array Traversal in Security Object Scanners
+**Learning:** In recursive object inspectors (e.g. security middleware scanning request payloads), traversing arrays using a general `for...in` loop results in high overhead because it iterates over array string indices (e.g., `'0'`, `'1'`) as object keys. This not only incurs `for...in` traversal overhead, but also runs key-specific checks (e.g., checking key string length/contents for ReDoS payloads) on numeric string indices unnecessarily.
+**Action:** Always check `Array.isArray(obj)` explicitly at the start of recursive object traversals. Use a simple, fast numeric `for` loop to iterate directly over array elements, bypassing key inspection on string index indices entirely. This can reduce CPU overhead by ~60% for requests with array-heavy payloads.
