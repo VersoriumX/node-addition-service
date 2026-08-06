@@ -61,3 +61,7 @@
 ## 2026-08-12 - In-Memory Static Asset Caching with Pre-Calculated ETags
 **Learning:** Serving static assets like `.html` and `.json` files via traditional disk reads or uncached middleware (such as standard `express.static` with on-the-fly MD5 hashing) incurs heavy I/O and CPU overhead. Doing so dynamically on every request introduces a noticeable bottleneck under high load.
 **Action:** Eagerly read and cache static assets in memory during application startup, and pre-calculate their MD5 ETags. Mount specialized route handlers for these assets before expensive middleware pipelines and `express.static`, immediately checking incoming `If-None-Match` headers for RFC 7232-compliant cache hits to return O(1) 304 Not Modified or 200 OK responses. This yields a massive 99.7%+ latency reduction.
+
+## 2026-08-19 - Redundant Double Regex Scans on Happy Validation Paths
+**Learning:** Validating input parameters using regular expressions can sometimes introduce redundant, duplicated scans if developers copy-paste checks or implement multi-layered validation layers with identical RegExp patterns. On hot/frequent execution paths, this wastes CPU cycles on the happy path.
+**Action:** Consolidate regular expression evaluations into a single execution, reusing compiled regex patterns. Ensure error handling combined assertions are retained if they are required by existing conflicting unit tests, but avoid double-scanning strings.
