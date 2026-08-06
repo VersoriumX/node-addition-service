@@ -48,15 +48,13 @@ function addToken(name, value) {
     if (typeof name !== 'string' || name.length > 100 || typeof value !== 'number' || !Number.isFinite(value)) {
         throw new Error('Invalid token name or value');
     }
-    // 🛡️ Sentinel: Validate that token name contains only a safe set of characters
-    if (!/^[a-zA-Z0-9\s._-]+$/.test(name)) {
-        throw new Error('Invalid token name or value');
+    // 🛡️ Sentinel: Validate that token name contains only a safe set of characters and protect against injections
+    // ⚡ Bolt Optimization: Replace double-redundant regex scans with a single evaluation of SAFE_NAME_REGEX.
+    if (!SAFE_NAME_REGEX.test(name)) {
+        throw new Error('Invalid token name: contains invalid characters / Invalid token name or value');
     }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
-    }
-    if (!SAFE_NAME_REGEX.test(name)) {
-        throw new Error('Invalid token name: contains invalid characters');
     }
     tokens[name] = value;
     updateCache();
