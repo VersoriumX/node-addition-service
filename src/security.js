@@ -85,4 +85,53 @@ function electricFence(req, res, next) {
     next();
 }
 
-module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs };
+// Lightweight, in-memory rate limiter to protect sensitive endpoints from brute-force/DoS
+const ipRequestCounts = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 100;
+
+function rateLimiter(req, res, next) {
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    const now = Date.now();
+    const record = ipRequestCounts.get(ip);
+
+    if (!record) {
+        ipRequestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+        if (res.setHeader) {
+            res.setHeader('X-RateLimit-Limit', MAX_REQUESTS);
+            res.setHeader('X-RateLimit-Remaining', MAX_REQUESTS - 1);
+            res.setHeader('X-RateLimit-Reset', Math.ceil((now + RATE_LIMIT_WINDOW) / 1000));
+        }
+        return next();
+    }
+
+    if (now > record.resetTime) {
+        record.count = 1;
+        record.resetTime = now + RATE_LIMIT_WINDOW;
+    } else {
+        record.count++;
+    }
+
+    const remaining = Math.max(0, MAX_REQUESTS - record.count);
+    if (res.setHeader) {
+        res.setHeader('X-RateLimit-Limit', MAX_REQUESTS);
+        res.setHeader('X-RateLimit-Remaining', remaining);
+        res.setHeader('X-RateLimit-Reset', Math.ceil(record.resetTime / 1000));
+    }
+
+    if (record.count > MAX_REQUESTS) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+
+    next();
+}
+
+module.exports = {
+    electricFence,
+    securityMiddleware: electricFence,
+    quarantinedIPs,
+    rateLimiter,
+    ipRequestCounts,
+    RATE_LIMIT_WINDOW,
+    MAX_REQUESTS
+};

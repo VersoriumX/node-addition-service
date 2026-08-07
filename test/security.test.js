@@ -1,6 +1,6 @@
 const { describe, it, beforeEach } = require('mocha');
 const { expect } = require('chai');
-const { electricFence, quarantinedIPs } = require('../src/security');
+const { electricFence, quarantinedIPs, rateLimiter, ipRequestCounts, MAX_REQUESTS } = require('../src/security');
 
 describe('Electric Fence Security Middleware', () => {
     beforeEach(() => {
@@ -96,5 +96,88 @@ describe('Electric Fence Security Middleware', () => {
         expect(statusSet).to.equal(403);
         expect(jsonSent.error).to.contain('Security Violation');
         expect(quarantinedIPs.has('8.8.8.8')).to.be.true;
+    });
+});
+
+describe('Rate Limiter Middleware', () => {
+    beforeEach(() => {
+        ipRequestCounts.clear();
+    });
+
+    it('should allow requests below the maximum limit and set X-RateLimit-* headers', (done) => {
+        const req = { ip: '1.2.3.4' };
+        const headers = {};
+        const res = {
+            setHeader: (key, val) => {
+                headers[key] = val;
+            }
+        };
+        const next = () => {
+            expect(headers['X-RateLimit-Limit']).to.equal(MAX_REQUESTS);
+            expect(headers['X-RateLimit-Remaining']).to.equal(MAX_REQUESTS - 1);
+            expect(headers['X-RateLimit-Reset']).to.be.a('number');
+            done();
+        };
+
+        rateLimiter(req, res, next);
+    });
+
+    it('should decrement the remaining requests count with subsequent requests', (done) => {
+        const req = { ip: '1.2.3.4' };
+        const headers = {};
+        const res = {
+            setHeader: (key, val) => {
+                headers[key] = val;
+            }
+        };
+
+        rateLimiter(req, res, () => {
+            expect(headers['X-RateLimit-Remaining']).to.equal(MAX_REQUESTS - 1);
+
+            rateLimiter(req, res, () => {
+                expect(headers['X-RateLimit-Remaining']).to.equal(MAX_REQUESTS - 2);
+                done();
+            });
+        });
+    });
+
+    it('should block requests exceeding the maximum limit with HTTP 429', () => {
+        const req = { ip: '1.2.3.4' };
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            setHeader: () => {},
+            status: (s) => { statusSet = s; return res; },
+            json: (m) => { jsonSent = m; }
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        // Set the request count to MAX_REQUESTS
+        ipRequestCounts.set('1.2.3.4', { count: MAX_REQUESTS, resetTime: Date.now() + 60000 });
+
+        rateLimiter(req, res, next);
+
+        expect(statusSet).to.equal(429);
+        expect(jsonSent.error).to.contain('Too many requests');
+    });
+
+    it('should reset the limit if the rate limit window has passed', (done) => {
+        const req = { ip: '1.2.3.4' };
+        const headers = {};
+        const res = {
+            setHeader: (key, val) => {
+                headers[key] = val;
+            }
+        };
+
+        // Seed with expired record
+        ipRequestCounts.set('1.2.3.4', { count: MAX_REQUESTS, resetTime: Date.now() - 1000 });
+
+        const next = () => {
+            expect(headers['X-RateLimit-Remaining']).to.equal(MAX_REQUESTS - 1);
+            done();
+        };
+
+        rateLimiter(req, res, next);
     });
 });
