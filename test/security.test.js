@@ -2,9 +2,12 @@ const { describe, it, beforeEach } = require('mocha');
 const { expect } = require('chai');
 const { electricFence, quarantinedIPs } = require('../src/security');
 
+const { apiRateLimiter, ipRequestCounts } = require('../src/security');
+
 describe('Electric Fence Security Middleware', () => {
     beforeEach(() => {
         quarantinedIPs.clear();
+        ipRequestCounts.clear();
     });
 
     it('should allow normal requests and set security headers if res.setHeader is present', (done) => {
@@ -96,5 +99,58 @@ describe('Electric Fence Security Middleware', () => {
         expect(statusSet).to.equal(403);
         expect(jsonSent.error).to.contain('Security Violation');
         expect(quarantinedIPs.has('8.8.8.8')).to.be.true;
+    });
+
+    describe('API Rate Limiter Middleware', () => {
+        it('should allow normal requests and set standard rate limit headers', (done) => {
+            const req = { ip: '1.1.1.1' };
+            const headers = {};
+            const res = {
+                setHeader: (key, val) => {
+                    headers[key] = val;
+                }
+            };
+            const next = () => {
+                expect(headers['X-RateLimit-Limit']).to.equal(100);
+                expect(headers['X-RateLimit-Remaining']).to.equal(99);
+                expect(headers['X-RateLimit-Reset']).to.be.a('number');
+                done();
+            };
+            apiRateLimiter(req, res, next);
+        });
+
+        it('should block requests and return 429 when rate limit is exceeded', () => {
+            const req = { ip: '2.2.2.2' };
+            const headers = {};
+            let statusSet = 0;
+            let jsonSent = null;
+            const res = {
+                setHeader: (key, val) => {
+                    headers[key] = val;
+                },
+                status: (s) => {
+                    statusSet = s;
+                    return res;
+                },
+                json: (m) => {
+                    jsonSent = m;
+                }
+            };
+
+            // Simulate 100 requests
+            for (let i = 0; i < 100; i++) {
+                apiRateLimiter(req, res, () => {});
+            }
+
+            expect(headers['X-RateLimit-Remaining']).to.equal(0);
+
+            // The 101st request should be blocked with 429
+            apiRateLimiter(req, res, () => {
+                throw new Error('Should not be called');
+            });
+
+            expect(statusSet).to.equal(429);
+            expect(jsonSent.error).to.contain('Too many requests');
+        });
     });
 });
