@@ -97,4 +97,28 @@ describe('Electric Fence Security Middleware', () => {
         expect(jsonSent.error).to.contain('Security Violation');
         expect(quarantinedIPs.has('8.8.8.8')).to.be.true;
     });
+
+    it('should allow safe array payloads and block suspicious array elements', () => {
+        // Safe array
+        const safeReq = { query: {}, body: { items: ['safe1', 'safe2'] }, ip: '1.2.3.4' };
+        let nextCalled = false;
+        const res = { setHeader: () => {} };
+        electricFence(safeReq, res, () => { nextCalled = true; });
+        expect(nextCalled).to.be.true;
+        expect(quarantinedIPs.has('1.2.3.4')).to.be.false;
+
+        // Suspicious array
+        const suspiciousPattern = '**/**/**';
+        const suspiciousReq = { query: {}, body: { items: ['safe1', suspiciousPattern] }, ip: '10.10.10.10' };
+        let statusSet = 0;
+        let jsonSent = null;
+        const suspiciousRes = {
+            status: (s) => { statusSet = s; return suspiciousRes; },
+            json: (m) => { jsonSent = m; }
+        };
+        const badNext = () => { throw new Error('Next should not be called'); };
+        electricFence(suspiciousReq, suspiciousRes, badNext);
+        expect(statusSet).to.equal(403);
+        expect(quarantinedIPs.has('10.10.10.10')).to.be.true;
+    });
 });
