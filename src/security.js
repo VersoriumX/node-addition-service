@@ -5,6 +5,54 @@
 
 const quarantinedIPs = new Set();
 
+// 🛡️ Sentinel Security Enhancement: Lightweight in-memory Rate Limiter
+// Enforces a limit of 100 requests per window (1 minute) per IP.
+const ipRequestCounts = new Map();
+const LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS = 100;
+
+function apiRateLimiter(req, res, next) {
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    const now = Date.now();
+
+    // 🛡️ Sentinel Defense-In-Depth: Periodically prune stale entries to prevent memory exhaustion
+    if (ipRequestCounts.size > 2000) {
+        for (const [key, val] of ipRequestCounts.entries()) {
+            if (now - val.startTime >= LIMIT_WINDOW_MS) {
+                ipRequestCounts.delete(key);
+            }
+        }
+    }
+
+    let record = ipRequestCounts.get(ip);
+    if (!record || (now - record.startTime >= LIMIT_WINDOW_MS)) {
+        record = {
+            startTime: now,
+            count: 0
+        };
+        ipRequestCounts.set(ip, record);
+    }
+
+    record.count++;
+
+    const remaining = Math.max(0, MAX_REQUESTS - record.count);
+    const resetTime = Math.ceil((record.startTime + LIMIT_WINDOW_MS - now) / 1000);
+
+    if (res.setHeader) {
+        res.setHeader('X-RateLimit-Limit', MAX_REQUESTS);
+        res.setHeader('X-RateLimit-Remaining', remaining);
+        res.setHeader('X-RateLimit-Reset', resetTime);
+    }
+
+    if (record.count > MAX_REQUESTS) {
+        return res.status(429).json({
+            error: 'Too many requests, please try again later.'
+        });
+    }
+
+    next();
+}
+
 /**
  * ⚡ Bolt Optimization:
  * Moved checkValue outside the middleware to prevent redeclaration on every request.
@@ -85,4 +133,4 @@ function electricFence(req, res, next) {
     next();
 }
 
-module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs };
+module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs, apiRateLimiter, ipRequestCounts };
