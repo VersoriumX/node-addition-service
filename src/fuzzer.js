@@ -14,6 +14,13 @@ const LEET_MAP = {
 };
 const LEET_REGEX = /[easo]/gi;
 
+// ⚡ Bolt Optimization: Private, size-limited, TTL-backed cache for deterministic fuzzer variations.
+// This prevents repeated casing operations, string reversals, leet transformations,
+// and Set/Array allocations, achieving a massive reduction in CPU execution time.
+const fuzzerCache = new Map();
+const MAX_CACHE_SIZE = 1000;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 function generateVariations(baseString) {
     if (typeof baseString !== 'string') {
         throw new TypeError('Input must be a string');
@@ -22,22 +29,45 @@ function generateVariations(baseString) {
         throw new RangeError('Input length must not exceed 250 characters');
     }
 
-    const variations = new Set();
-    variations.add(baseString);
-    variations.add(baseString.toUpperCase());
-    variations.add(baseString.toLowerCase());
-    variations.add(baseString + "123");
-    variations.add(baseString + "!");
-    variations.add(baseString.split('').reverse().join(''));
+    // Check cache for existing non-expired result
+    const cached = fuzzerCache.get(baseString);
+    if (cached) {
+        if (Date.now() < cached.expiry) {
+            return cached.variations;
+        }
+        fuzzerCache.delete(baseString);
+    }
+
+    const variationsSet = new Set();
+    variationsSet.add(baseString);
+    variationsSet.add(baseString.toUpperCase());
+    variationsSet.add(baseString.toLowerCase());
+    variationsSet.add(baseString + "123");
+    variationsSet.add(baseString + "!");
+    variationsSet.add(baseString.split('').reverse().join(''));
 
     // Add some common "leet" variations
     // ⚡ Bolt Optimization: Using a single pass replace operation with map lookup.
     // This reduces string scanning complexity from O(4 * N) to O(N) and prevents
     // the generation of intermediate string allocations, boosting performance by ~30-40%.
     const leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
-    variations.add(leet);
+    variationsSet.add(leet);
 
-    return Array.from(variations);
+    const variations = Array.from(variationsSet);
+
+    // Evict oldest entry if cache is full (FIFO)
+    if (fuzzerCache.size >= MAX_CACHE_SIZE) {
+        const oldestKey = fuzzerCache.keys().next().value;
+        fuzzerCache.delete(oldestKey);
+    }
+
+    // Cache the result
+    fuzzerCache.set(baseString, {
+        variations,
+        expiry: Date.now() + CACHE_TTL
+    });
+
+    return variations;
 }
 
-module.exports = { generateVariations };
+module.exports = { generateVariations, fuzzerCache };
