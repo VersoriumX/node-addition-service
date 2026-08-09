@@ -100,4 +100,46 @@ function electricFence(req, res, next) {
     next();
 }
 
-module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs };
+const ipRequestCounts = new Map();
+
+/**
+ * 🛡️ Sentinel Security Enhancement:
+ * A lightweight, in-memory rate limiter middleware to protect sensitive APIs against DoS/brute-force.
+ * Implements a stale-entry pruning check when Map size exceeds 2000 to prevent memory exhaustion (DoS).
+ */
+function apiRateLimiter(req, res, next) {
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    const now = Date.now();
+    const windowMs = 60 * 1000;
+    const limit = 100;
+
+    let record = ipRequestCounts.get(ip);
+    if (!record || now > record.resetTime) {
+        record = { count: 0, resetTime: now + windowMs };
+    }
+
+    record.count++;
+    ipRequestCounts.set(ip, record);
+
+    if (ipRequestCounts.size > 2000) {
+        for (const [key, val] of ipRequestCounts.entries()) {
+            if (now > val.resetTime) {
+                ipRequestCounts.delete(key);
+            }
+        }
+    }
+
+    if (res.setHeader) {
+        res.setHeader('X-RateLimit-Limit', limit);
+        res.setHeader('X-RateLimit-Remaining', Math.max(0, limit - record.count));
+        res.setHeader('X-RateLimit-Reset', Math.ceil(record.resetTime / 1000));
+    }
+
+    if (record.count > limit) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+
+    next();
+}
+
+module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs, apiRateLimiter, ipRequestCounts };
