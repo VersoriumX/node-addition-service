@@ -122,3 +122,76 @@ describe('Electric Fence Security Middleware', () => {
         expect(quarantinedIPs.has('10.10.10.10')).to.be.true;
     });
 });
+
+const { apiRateLimiter, ipRequestCounts } = require('../src/security');
+
+describe('API Rate Limiter Middleware', () => {
+    beforeEach(() => {
+        ipRequestCounts.clear();
+    });
+
+    it('should allow requests under the limit and set rate limit headers', (done) => {
+        const req = { ip: '192.168.1.1' };
+        const headers = {};
+        const res = {
+            setHeader: (key, val) => {
+                headers[key] = val;
+            }
+        };
+        const next = () => {
+            expect(headers['X-RateLimit-Limit']).to.equal(100);
+            expect(headers['X-RateLimit-Remaining']).to.equal(99);
+            expect(headers['X-RateLimit-Reset']).to.exist;
+            done();
+        };
+        apiRateLimiter(req, res, next);
+    });
+
+    it('should block requests when they exceed the limit and set appropriate headers', () => {
+        const req = { ip: '192.168.1.2' };
+        const headers = {};
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            setHeader: (key, val) => {
+                headers[key] = val;
+            },
+            status: (s) => {
+                statusSet = s;
+                return res;
+            },
+            json: (m) => {
+                jsonSent = m;
+            }
+        };
+
+        // Exceed the limit (100 is limit, so 101st request should fail)
+        for (let i = 0; i < 101; i++) {
+            apiRateLimiter(req, res, () => {});
+        }
+
+        expect(statusSet).to.equal(429);
+        expect(jsonSent.error).to.contain('Too many requests');
+        expect(headers['X-RateLimit-Remaining']).to.equal(0);
+    });
+
+    it('should prune expired stale entries when the Map size exceeds 2000', () => {
+        // Mock a bunch of expired entries
+        const now = Date.now();
+        for (let i = 0; i < 2005; i++) {
+            ipRequestCounts.set(`10.0.0.${i}`, { count: 1, resetTime: now - 1000 }); // expired
+        }
+        expect(ipRequestCounts.size).to.equal(2005);
+
+        // Trigger rate limiter with a new request, which should run the prune logic
+        const req = { ip: '192.168.1.3' };
+        const res = { setHeader: () => {} };
+        apiRateLimiter(req, res, () => {});
+
+        // Since all 2005 entries were expired, they should have been pruned.
+        // Only the new request (and maybe some of the loop-added entries if map iteration order differs,
+        // but since all loop entries are expired, they all must be pruned).
+        // So the size should now be 1 (for the current request).
+        expect(ipRequestCounts.size).to.equal(1);
+    });
+});
