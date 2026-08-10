@@ -1,6 +1,6 @@
 const { describe, it, beforeEach } = require('mocha');
 const { expect } = require('chai');
-const { electricFence, quarantinedIPs } = require('../src/security');
+const { electricFence, quarantinedIPs, rateLimiter, ipRequestCounts } = require('../src/security');
 
 describe('Electric Fence Security Middleware', () => {
     beforeEach(() => {
@@ -120,5 +120,76 @@ describe('Electric Fence Security Middleware', () => {
         electricFence(suspiciousReq, suspiciousRes, badNext);
         expect(statusSet).to.equal(403);
         expect(quarantinedIPs.has('10.10.10.10')).to.be.true;
+    });
+
+    describe('Rate Limiter Middleware', () => {
+        beforeEach(() => {
+            ipRequestCounts.clear();
+        });
+
+        it('should allow normal requests and set rate limit headers', (done) => {
+            const req = { ip: '192.168.1.1' };
+            const headers = {};
+            const res = {
+                setHeader: (key, val) => {
+                    headers[key] = val;
+                }
+            };
+            const next = () => {
+                expect(headers['X-RateLimit-Limit']).to.equal(100);
+                expect(headers['X-RateLimit-Remaining']).to.equal(99);
+                expect(headers['X-RateLimit-Reset']).to.exist;
+                expect(ipRequestCounts.get('192.168.1.1').count).to.equal(1);
+                done();
+            };
+            rateLimiter(req, res, next);
+        });
+
+        it('should return 429 when request limit is exceeded', () => {
+            const req = { ip: '192.168.1.2' };
+            const headers = {};
+            let statusSet = 0;
+            let jsonSent = null;
+            const res = {
+                setHeader: (key, val) => {
+                    headers[key] = val;
+                },
+                status: (s) => {
+                    statusSet = s;
+                    return res;
+                },
+                json: (j) => {
+                    jsonSent = j;
+                }
+            };
+
+            // Exceed limit
+            for (let i = 0; i < 101; i++) {
+                rateLimiter(req, res, () => {});
+            }
+
+            expect(statusSet).to.equal(429);
+            expect(jsonSent.error).to.contain('Too many requests');
+            expect(headers['X-RateLimit-Remaining']).to.equal(0);
+        });
+
+        it('should prune stale entries when map grows too large', () => {
+            const now = Date.now();
+            // Put some stale entry
+            ipRequestCounts.set('stale-ip', { count: 1, resetTime: now - 1000 });
+            // Put active entries to push size beyond 2000
+            for (let i = 0; i < 2005; i++) {
+                ipRequestCounts.set(`ip-${i}`, { count: 1, resetTime: now + 60000 });
+            }
+
+            const req = { ip: 'trigger-ip' };
+            const res = { setHeader: () => {} };
+            rateLimiter(req, res, () => {});
+
+            // 'stale-ip' should be pruned because resetTime is in the past
+            expect(ipRequestCounts.has('stale-ip')).to.be.false;
+            // The newly added IP should be present
+            expect(ipRequestCounts.has('trigger-ip')).to.be.true;
+        });
     });
 });

@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { addToken, getAllTokens } = require('./src/tokenmanager');
-const { electricFence } = require('./src/security');
+const { electricFence, rateLimiter } = require('./src/security');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 
 const app = express();
@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(electricFence);
+app.use('/api', rateLimiter);
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API for Tokens

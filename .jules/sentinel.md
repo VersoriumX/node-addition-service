@@ -43,3 +43,8 @@
 **Vulnerability:** While `electricFence` middleware scanned nested object values recursively, it completely omitted scanning the keys of JSON payloads, leaving a bypass vector where malicious ReDoS payloads in object keys could evade inspection.
 **Learning:** Attackers can inject payloads not just in request values but also in request keys when Express or middleware processes user inputs dynamically or recursively.
 **Prevention:** Always scan object keys in addition to values when traversing user-supplied JSON or request data structures.
+
+## 2026-07-27 - Custom Memory-Safe Rate Limiter (DoS Prevention)
+**Vulnerability:** Sensitive backend APIs (such as token operations, RSA encryption/decryption, and input fuzzing) lacked rate limiting, exposing them to brute-force and resource-exhaustion Denial of Service (DoS) attacks.
+**Learning:** Standard custom in-memory rate limiters track client IPs in a hash map indefinitely, which can be exploited by attackers spoofing multiple source IPs, causing unbounded memory growth and crashing the Node process.
+**Prevention:** Always implement self-pruning/eviction strategies (such as deleting stale window records once the Map size exceeds a safe threshold like 2000) when tracking state dynamically in module-scope memory.
