@@ -69,3 +69,7 @@
 ## 2026-08-26 - Array Traversal Optimization in Security Scanners
 **Learning:** When recursively scanning objects (such as Express `req.query` or `req.body` payloads) for security vulnerabilities or malicious strings, falling back to a `for...in` loop to traverse arrays incurs severe overhead. It iterates over numeric index keys (like `'0'`, `'1'`), leading to redundant prototype checking and unnecessary string/regex validation on those index string keys.
 **Action:** Explicitly handle array checking using `Array.isArray(obj)` and loop through elements directly using a fast `for` loop. This avoids key-string traversal and avoids redundant security scans on the array indices, saving up to ~78.5% CPU overhead on requests containing array payloads.
+
+## 2026-09-02 - Deterministic Function Caching for Heavy CPU/String Operations
+**Learning:** In hot code paths that invoke deterministic functions containing heavy string manipulations, conversions (e.g., casing, reversing, replacing), or array/Set allocations, the execution and garbage collection overhead quickly compound under load. Since outputs are entirely deterministic based on the input, caching results in a simple, size-limited, TTL-backed memory Map avoids CPU overhead on duplicate requests.
+**Action:** Implement a private, size-limited (MAX_SIZE = 1000) and TTL-backed cache utilizing a native JS Map. Use O(1) FIFO eviction on the Map to prevent memory leaks and protect against Denial of Service resource exhaustion.
