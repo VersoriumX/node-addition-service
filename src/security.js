@@ -71,6 +71,52 @@ function checkObject(obj, depth = 0) {
     return false;
 }
 
+const ipRequestCounts = new Map();
+
+/**
+ * 🛡️ Sentinel Security Enhancement:
+ * Lightweight in-memory rate limiter to protect sensitive backend APIs from DoS.
+ * Tracks client IP, enforces 100 requests per minute limit, and sets rate-limiting headers.
+ */
+function rateLimiter(req, res, next) {
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    const now = Date.now();
+    const windowDuration = 60000;
+    const limit = 100;
+
+    let record = ipRequestCounts.get(ip);
+    if (!record || now > record.resetTime) {
+        record = { count: 0, resetTime: now + windowDuration };
+        ipRequestCounts.set(ip, record);
+    }
+
+    // Prune stale entries if the Map size exceeds 2000 to prevent unbounded memory growth (DoS)
+    if (ipRequestCounts.size > 2000) {
+        for (const [key, val] of ipRequestCounts.entries()) {
+            if (now > val.resetTime) {
+                ipRequestCounts.delete(key);
+            }
+        }
+    }
+
+    record.count++;
+
+    const remaining = Math.max(0, limit - record.count);
+    const resetSeconds = Math.ceil(record.resetTime / 1000);
+
+    if (res.setHeader) {
+        res.setHeader('X-RateLimit-Limit', limit);
+        res.setHeader('X-RateLimit-Remaining', remaining);
+        res.setHeader('X-RateLimit-Reset', resetSeconds);
+    }
+
+    if (record.count > limit) {
+        return res.status(429).json({ error: 'Too many requests, please try again later.' });
+    }
+
+    next();
+}
+
 function electricFence(req, res, next) {
     // 🛡️ Sentinel Security Enhancement: Add standard security headers for defense-in-depth
     if (res.setHeader) {
@@ -100,4 +146,4 @@ function electricFence(req, res, next) {
     next();
 }
 
-module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs };
+module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs, rateLimiter, ipRequestCounts };
