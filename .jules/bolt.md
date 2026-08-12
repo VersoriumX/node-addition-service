@@ -69,3 +69,7 @@
 ## 2026-08-26 - Array Traversal Optimization in Security Scanners
 **Learning:** When recursively scanning objects (such as Express `req.query` or `req.body` payloads) for security vulnerabilities or malicious strings, falling back to a `for...in` loop to traverse arrays incurs severe overhead. It iterates over numeric index keys (like `'0'`, `'1'`), leading to redundant prototype checking and unnecessary string/regex validation on those index string keys.
 **Action:** Explicitly handle array checking using `Array.isArray(obj)` and loop through elements directly using a fast `for` loop. This avoids key-string traversal and avoids redundant security scans on the array indices, saving up to ~78.5% CPU overhead on requests containing array payloads.
+
+## 2026-09-02 - Deterministic Fuzzer Variation Cache
+**Learning:** CPU-heavy synchronous tasks like string fuzzing (involving uppercase/lowercase conversions, string reversal, leet replacement, Set generation, and array allocations) are completely deterministic. Placing a private, size-bounded, TTL-backed cache in front of such algorithms avoids repeated microtask string/object allocation churn and GC overhead for identical query payloads, turning a complex CPU task into an O(1) cache read.
+**Action:** Always implement a bounded in-memory cache for deterministic CPU-heavy or allocation-heavy synchronous string/data generation services on hot paths to eliminate processing and GC pressure under high request load.
