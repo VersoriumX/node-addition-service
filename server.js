@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { addToken, getAllTokens } = require('./src/tokenmanager');
-const { electricFence } = require('./src/security');
+const { electricFence, rateLimiter } = require('./src/security');
 const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
 
 const app = express();
@@ -9,6 +9,7 @@ app.disable('x-powered-by');
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+app.use('/api', rateLimiter); // Protect backend API endpoints
 app.use(express.json());
 app.use(electricFence);
 app.use(express.static(path.join(__dirname, 'public')));

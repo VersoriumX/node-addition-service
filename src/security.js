@@ -4,6 +4,62 @@
  */
 
 const quarantinedIPs = new Set();
+const ipRequestCounts = new Map();
+
+/**
+ * Prunes expired rate limit entries to prevent memory-exhaustion (DoS) risks.
+ */
+function pruneRateLimitMap() {
+    const now = Date.now();
+    for (const [ip, entry] of ipRequestCounts.entries()) {
+        if (entry.resetTime <= now) {
+            ipRequestCounts.delete(ip);
+        }
+    }
+}
+
+/**
+ * 🛡️ Sentinel Security Enhancement:
+ * A lightweight, in-memory rate limiter middleware that restricts request rates
+ * to 100 per minute per IP, setting standard headers and performing stale-entry pruning.
+ */
+function rateLimiter(req, res, next) {
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    const now = Date.now();
+    const limit = 100;
+    const windowMs = 60 * 1000; // 1 minute
+
+    let entry = ipRequestCounts.get(ip);
+    if (!entry || entry.resetTime <= now) {
+        entry = {
+            count: 0,
+            resetTime: now + windowMs
+        };
+    }
+
+    entry.count += 1;
+    ipRequestCounts.set(ip, entry);
+
+    // Limit memory footprint and prevent DoS by pruning stale entries when the Map grows too large
+    if (ipRequestCounts.size > 2000) {
+        pruneRateLimitMap();
+    }
+
+    const remaining = Math.max(0, limit - entry.count);
+    const resetSeconds = Math.ceil((entry.resetTime - now) / 1000);
+
+    if (res.setHeader) {
+        res.setHeader('X-RateLimit-Limit', limit);
+        res.setHeader('X-RateLimit-Remaining', remaining);
+        res.setHeader('X-RateLimit-Reset', resetSeconds);
+    }
+
+    if (entry.count > limit) {
+        return res.status(429).json({ error: "Too many requests, please try again later." });
+    }
+
+    next();
+}
 
 /**
  * ⚡ Bolt Optimization:
@@ -100,4 +156,11 @@ function electricFence(req, res, next) {
     next();
 }
 
-module.exports = { electricFence, securityMiddleware: electricFence, quarantinedIPs };
+module.exports = {
+    electricFence,
+    securityMiddleware: electricFence,
+    quarantinedIPs,
+    rateLimiter,
+    rateLimitMiddleware: rateLimiter,
+    ipRequestCounts
+};
