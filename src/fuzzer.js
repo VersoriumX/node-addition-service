@@ -14,12 +14,26 @@ const LEET_MAP = {
 };
 const LEET_REGEX = /[easo]/gi;
 
+// ⚡ Bolt Optimization: Private, size-limited, TTL-backed fuzzer cache to avoid
+// redundant Set/Array allocations and string operations on repeated inputs.
+const fuzzerCache = new Map();
+const MAX_CACHE_SIZE = 1000;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 function generateVariations(baseString) {
     if (typeof baseString !== 'string') {
         throw new TypeError('Input must be a string');
     }
     if (baseString.length > 250) {
         throw new RangeError('Input length must not exceed 250 characters');
+    }
+
+    const cached = fuzzerCache.get(baseString);
+    if (cached) {
+        if (Date.now() < cached.expiry) {
+            return cached.variations;
+        }
+        fuzzerCache.delete(baseString);
     }
 
     const variations = new Set();
@@ -37,7 +51,26 @@ function generateVariations(baseString) {
     const leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
     variations.add(leet);
 
-    return Array.from(variations);
+    const result = Array.from(variations);
+
+    if (fuzzerCache.size >= MAX_CACHE_SIZE) {
+        // FIFO eviction: remove the oldest entry (the first key in insertion order)
+        const oldestKey = fuzzerCache.keys().next().value;
+        fuzzerCache.delete(oldestKey);
+    }
+
+    fuzzerCache.set(baseString, {
+        variations: result,
+        expiry: Date.now() + CACHE_TTL
+    });
+
+    return result;
 }
 
-module.exports = { generateVariations };
+module.exports = {
+    generateVariations,
+    // Exported for unit testing and verification
+    _fuzzerCache: fuzzerCache,
+    _MAX_CACHE_SIZE: MAX_CACHE_SIZE,
+    _CACHE_TTL: CACHE_TTL
+};

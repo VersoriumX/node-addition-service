@@ -69,3 +69,7 @@
 ## 2026-08-26 - Array Traversal Optimization in Security Scanners
 **Learning:** When recursively scanning objects (such as Express `req.query` or `req.body` payloads) for security vulnerabilities or malicious strings, falling back to a `for...in` loop to traverse arrays incurs severe overhead. It iterates over numeric index keys (like `'0'`, `'1'`), leading to redundant prototype checking and unnecessary string/regex validation on those index string keys.
 **Action:** Explicitly handle array checking using `Array.isArray(obj)` and loop through elements directly using a fast `for` loop. This avoids key-string traversal and avoids redundant security scans on the array indices, saving up to ~78.5% CPU overhead on requests containing array payloads.
+
+## 2026-08-30 - In-Memory Fuzzer Cache to Eliminate Redundant Allocations and CPU Overhead
+**Learning:** Hot-path operations that perform intensive string mutations, Set/Array allocations, casing conversions, and pattern replacements (such as string fuzzer generators) can lead to high CPU and GC load under repeating workloads. Introducing a size-limited, TTL-backed in-memory cache completely bypasses recalculation.
+**Action:** Implement private, size-limited Map-based caches with FIFO eviction and custom TTL expiration for deterministic, heavy processing operations to deliver near O(1) performance for repeated inputs.
