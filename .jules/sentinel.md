@@ -43,3 +43,8 @@
 **Vulnerability:** While `electricFence` middleware scanned nested object values recursively, it completely omitted scanning the keys of JSON payloads, leaving a bypass vector where malicious ReDoS payloads in object keys could evade inspection.
 **Learning:** Attackers can inject payloads not just in request values but also in request keys when Express or middleware processes user inputs dynamically or recursively.
 **Prevention:** Always scan object keys in addition to values when traversing user-supplied JSON or request data structures.
+
+## 2026-07-27 - Unbounded Memory Growth in Rate Limiters
+**Vulnerability:** Simple in-memory rate limiters track requests per client IP in a Map but do not clean up expired entries, leading to unbounded memory growth and memory-exhaustion DoS over time.
+**Learning:** Tracking request counts without pruning creates a memory leak when encountering diverse IP addresses (e.g. distributed botnets or standard internet traffic).
+**Prevention:** Implement a sliding window reset or periodic pruning (e.g. once Map size exceeds a limit) to discard expired client IP entries securely.
