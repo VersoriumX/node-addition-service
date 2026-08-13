@@ -69,3 +69,7 @@
 ## 2026-08-26 - Array Traversal Optimization in Security Scanners
 **Learning:** When recursively scanning objects (such as Express `req.query` or `req.body` payloads) for security vulnerabilities or malicious strings, falling back to a `for...in` loop to traverse arrays incurs severe overhead. It iterates over numeric index keys (like `'0'`, `'1'`), leading to redundant prototype checking and unnecessary string/regex validation on those index string keys.
 **Action:** Explicitly handle array checking using `Array.isArray(obj)` and loop through elements directly using a fast `for` loop. This avoids key-string traversal and avoids redundant security scans on the array indices, saving up to ~78.5% CPU overhead on requests containing array payloads.
+
+## 2026-09-02 - Efficient Fuzzer Cache & O(1) Map FIFO Eviction
+**Learning:** High-frequency, deterministic CPU-intensive tasks like generating multiple text fuzzer variations (which allocate Sets/Arrays, perform casing, reversals, and regex replacements) can be highly optimized via an in-memory cache. To prevent memory bloat, native JavaScript `Map`'s insertion order is utilized via `Map.prototype.keys().next().value` to achieve constant-time $O(1)$ FIFO eviction without any extra tracking overhead.
+**Action:** Implement private, size-limited, TTL-backed caches using native `Map` and `keys().next().value` for fast, low-overhead eviction in performance-critical CPU-heavy modules.
