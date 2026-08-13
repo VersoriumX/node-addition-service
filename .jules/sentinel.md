@@ -48,3 +48,8 @@
 **Vulnerability:** Simple in-memory rate limiters track requests per client IP in a Map but do not clean up expired entries, leading to unbounded memory growth and memory-exhaustion DoS over time.
 **Learning:** Tracking request counts without pruning creates a memory leak when encountering diverse IP addresses (e.g. distributed botnets or standard internet traffic).
 **Prevention:** Implement a sliding window reset or periodic pruning (e.g. once Map size exceeds a limit) to discard expired client IP entries securely.
+
+## 2026-08-30 - Unbounded IP Quarantine and Accidental Global DoS in Security Middleware
+**Vulnerability:** The IP-based quarantine list (`quarantinedIPs` Set) was unbounded, allowing attackers to cause a memory-exhaustion Denial of Service (DoS) by sending suspicious payloads from many unique IP addresses. Additionally, falsy IP addresses (e.g., `undefined` or `'unknown'`) could be quarantined, which accidentally locked out all legitimate clients with unresolved IPs.
+**Learning:** Security state (like IP blocks) must never have unbounded memory footprints. Furthermore, fallback identifiers like `undefined` or `'unknown'` must be excluded from blocklists to prevent a single malicious or malformed request from denying access to everyone sharing that fallback.
+**Prevention:** Enforce a strict maximum capacity (e.g., 1000 entries) on the quarantine Set with a FIFO eviction strategy, and explicitly validate that IP addresses are known and resolved before checking or quarantining them.

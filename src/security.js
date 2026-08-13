@@ -137,9 +137,9 @@ function electricFence(req, res, next) {
         res.setHeader('X-XSS-Protection', '1; mode=block');
     }
 
-    const ip = req.ip || (req.socket && req.socket.remoteAddress);
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
 
-    if (quarantinedIPs.has(ip)) {
+    if (ip !== 'unknown' && quarantinedIPs.has(ip)) {
         return res.status(403).json({ error: "Access Denied: IP Quarantined." });
     }
 
@@ -149,7 +149,14 @@ function electricFence(req, res, next) {
 
     if (isSuspicious) {
         console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);
-        quarantinedIPs.add(ip);
+        if (ip !== 'unknown') {
+            quarantinedIPs.add(ip);
+            // Prevent unbounded memory growth DoS by limiting Set size to 1000 and evicting oldest (FIFO)
+            if (quarantinedIPs.size > 1000) {
+                const oldest = quarantinedIPs.values().next().value;
+                quarantinedIPs.delete(oldest);
+            }
+        }
         return res.status(403).json({ error: "Security Violation: Suspicious payload detected." });
     }
 
