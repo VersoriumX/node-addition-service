@@ -14,12 +14,27 @@ const LEET_MAP = {
 };
 const LEET_REGEX = /[easo]/gi;
 
+// ⚡ Bolt Optimization: Private, size-limited, TTL-backed cache for fuzzer variations.
+// This completely avoids repeated casing, reversing, leet transformations, and Set/Array
+// allocations, providing near-instant O(1) response times for cached inputs.
+const variationsCache = new Map();
+const MAX_CACHE_SIZE = 1000;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 function generateVariations(baseString) {
     if (typeof baseString !== 'string') {
         throw new TypeError('Input must be a string');
     }
     if (baseString.length > 250) {
         throw new RangeError('Input length must not exceed 250 characters');
+    }
+
+    const cached = variationsCache.get(baseString);
+    if (cached) {
+        if (Date.now() < cached.expiry) {
+            return cached.variations;
+        }
+        variationsCache.delete(baseString);
     }
 
     const variations = new Set();
@@ -37,7 +52,20 @@ function generateVariations(baseString) {
     const leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
     variations.add(leet);
 
-    return Array.from(variations);
+    const result = Array.from(variations);
+
+    if (variationsCache.size >= MAX_CACHE_SIZE) {
+        // FIFO eviction: remove the oldest entry (the first key in insertion order)
+        const oldestKey = variationsCache.keys().next().value;
+        variationsCache.delete(oldestKey);
+    }
+
+    variationsCache.set(baseString, {
+        variations: result,
+        expiry: Date.now() + CACHE_TTL
+    });
+
+    return result;
 }
 
 module.exports = { generateVariations };
