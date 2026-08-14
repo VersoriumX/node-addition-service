@@ -121,4 +121,50 @@ describe('Electric Fence Security Middleware', () => {
         expect(statusSet).to.equal(403);
         expect(quarantinedIPs.has('10.10.10.10')).to.be.true;
     });
+
+    it('should bypass checking or adding invalid/unknown IPs', () => {
+        // Test with unknown/undefined IP
+        const suspiciousPattern = '**/**/**';
+        const req = { query: { path: suspiciousPattern }, body: {}, ip: 'unknown' };
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: (m) => { jsonSent = m; }
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        expect(jsonSent.error).to.contain('Security Violation');
+        expect(quarantinedIPs.has('unknown')).to.be.false;
+        expect(quarantinedIPs.size).to.equal(0);
+    });
+
+    it('should evict the oldest quarantine IP when list exceeds 1000', () => {
+        // Populate the quarantine list to 1000 entries
+        for (let i = 0; i < 1000; i++) {
+            quarantinedIPs.add(`192.168.1.${i}`);
+        }
+        expect(quarantinedIPs.size).to.equal(1000);
+
+        // Add another suspicious request from a new IP
+        const suspiciousPattern = '**/**/**';
+        const req = { query: { path: suspiciousPattern }, body: {}, ip: '1.2.3.4' };
+        let statusSet = 0;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: () => {}
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        expect(quarantinedIPs.size).to.equal(1000);
+        expect(quarantinedIPs.has('192.168.1.0')).to.be.false; // Oldest evicted
+        expect(quarantinedIPs.has('192.168.1.1')).to.be.true;
+        expect(quarantinedIPs.has('1.2.3.4')).to.be.true;     // New added
+    });
 });

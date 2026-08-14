@@ -138,8 +138,9 @@ function electricFence(req, res, next) {
     }
 
     const ip = req.ip || (req.socket && req.socket.remoteAddress);
+    const isIpValid = ip && ip !== 'unknown';
 
-    if (quarantinedIPs.has(ip)) {
+    if (isIpValid && quarantinedIPs.has(ip)) {
         return res.status(403).json({ error: "Access Denied: IP Quarantined." });
     }
 
@@ -148,8 +149,17 @@ function electricFence(req, res, next) {
     const isSuspicious = checkObject(req.query) || checkObject(req.body);
 
     if (isSuspicious) {
-        console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);
-        quarantinedIPs.add(ip);
+        if (isIpValid) {
+            console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);
+            if (quarantinedIPs.size >= 1000 && !quarantinedIPs.has(ip)) {
+                // FIFO Eviction: delete the oldest entry
+                const oldestIp = quarantinedIPs.values().next().value;
+                quarantinedIPs.delete(oldestIp);
+            }
+            quarantinedIPs.add(ip);
+        } else {
+            console.warn('Suspicious activity detected from unresolved/unknown IP. Skipping quarantine addition to prevent global DoS.');
+        }
         return res.status(403).json({ error: "Security Violation: Suspicious payload detected." });
     }
 
