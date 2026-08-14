@@ -22,4 +22,13 @@ describe('Fuzzer Service', () => {
         const longInput = 'a'.repeat(251);
         expect(() => generateVariations(longInput)).to.throw(RangeError, 'Input length must not exceed 250 characters');
     });
+
+    it('should cache and return correct variations for subsequent calls', () => {
+        const base = 'cachetest';
+        const res1 = generateVariations(base);
+        const res2 = generateVariations(base);
+        expect(res1).to.equal(res2); // Should be the exact same array reference from cache
+        expect(res2).to.be.an('array');
+        expect(res2).to.include('CACHETEST');
+    });
 });
