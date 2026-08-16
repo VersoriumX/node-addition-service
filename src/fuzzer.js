@@ -14,6 +14,18 @@ const LEET_MAP = {
 };
 const LEET_REGEX = /[easo]/gi;
 
+/**
+ * ⚡ Bolt Optimization: Fast string reversal helper.
+ * Avoids intermediate Array creation and join overhead from .split('').reverse().join('').
+ */
+function reverseString(str) {
+    let rev = '';
+    for (let i = str.length - 1; i >= 0; i--) {
+        rev += str[i];
+    }
+    return rev;
+}
+
 function generateVariations(baseString) {
     if (typeof baseString !== 'string') {
         throw new TypeError('Input must be a string');
@@ -28,7 +40,9 @@ function generateVariations(baseString) {
     variations.add(baseString.toLowerCase());
     variations.add(baseString + "123");
     variations.add(baseString + "!");
-    variations.add(baseString.split('').reverse().join(''));
+    // ⚡ Bolt Optimization: Replace split('').reverse().join('') with reverseString()
+    // to avoid intermediate array allocations and reduce GC pressure.
+    variations.add(reverseString(baseString));
 
     // Add some common "leet" variations
     // ⚡ Bolt Optimization: Using a single pass replace operation with map lookup.
