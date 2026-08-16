@@ -42,3 +42,36 @@ console.log(`Optimized Single Regex Pass: ${optimizedTime.toFixed(4)}ms`);
 
 const speedup = ((originalTime - optimizedTime) / originalTime) * 100;
 console.log(`Estimated Performance Gain: ${speedup.toFixed(2)}% faster\n`);
+
+console.log("--- Benchmarking String Reversal (500,000 iterations) ---");
+
+function originalReverse(s) {
+    return s.split('').reverse().join('');
+}
+
+function optimizedReverse(s) {
+    let out = '';
+    for (let i = s.length - 1; i >= 0; i--) {
+        out += s[i];
+    }
+    return out;
+}
+
+const startRevOrig = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    originalReverse(testStr);
+}
+const endRevOrig = parseFloat(process.hrtime.bigint()) / 1e6;
+const revOrigTime = endRevOrig - startRevOrig;
+console.log(`Original split().reverse().join(): ${revOrigTime.toFixed(4)}ms`);
+
+const startRevOpt = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    optimizedReverse(testStr);
+}
+const endRevOpt = parseFloat(process.hrtime.bigint()) / 1e6;
+const revOptTime = endRevOpt - startRevOpt;
+console.log(`Optimized Backward Loop: ${revOptTime.toFixed(4)}ms`);
+
+const revSpeedup = ((revOrigTime - revOptTime) / revOrigTime) * 100;
+console.log(`Estimated Reversal Performance Gain: ${revSpeedup.toFixed(2)}% faster\n`);
