@@ -1,6 +1,6 @@
 const { describe, it, beforeEach } = require('mocha');
 const { expect } = require('chai');
-const { electricFence, quarantinedIPs } = require('../src/security');
+const { electricFence, quarantinedIPs, addQuarantinedIP } = require('../src/security');
 
 describe('Electric Fence Security Middleware', () => {
     beforeEach(() => {
@@ -120,5 +120,26 @@ describe('Electric Fence Security Middleware', () => {
         electricFence(suspiciousReq, suspiciousRes, badNext);
         expect(statusSet).to.equal(403);
         expect(quarantinedIPs.has('10.10.10.10')).to.be.true;
+    });
+
+    it('should skip quarantining missing or unknown IPs', () => {
+        addQuarantinedIP('unknown');
+        addQuarantinedIP('');
+        addQuarantinedIP(null);
+        addQuarantinedIP(undefined);
+        expect(quarantinedIPs.size).to.equal(0);
+    });
+
+    it('should evict oldest quarantined IP when reaching MAX_QUARANTINE_SIZE', () => {
+        for (let i = 0; i < 1000; i++) {
+            addQuarantinedIP(`10.0.0.${i}`);
+        }
+        expect(quarantinedIPs.size).to.equal(1000);
+        expect(quarantinedIPs.has('10.0.0.0')).to.be.true;
+
+        addQuarantinedIP('10.0.0.1000');
+        expect(quarantinedIPs.size).to.equal(1000);
+        expect(quarantinedIPs.has('10.0.0.0')).to.be.false;
+        expect(quarantinedIPs.has('10.0.0.1000')).to.be.true;
     });
 });
