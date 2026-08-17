@@ -4,7 +4,17 @@
  */
 
 const quarantinedIPs = new Set();
+const MAX_QUARANTINE_SIZE = 1000;
 const ipRequestCounts = new Map();
+
+function addQuarantinedIP(ip) {
+    if (!ip || ip === 'unknown') return;
+    if (quarantinedIPs.size >= MAX_QUARANTINE_SIZE) {
+        const oldestIP = quarantinedIPs.keys().next().value;
+        quarantinedIPs.delete(oldestIP);
+    }
+    quarantinedIPs.add(ip);
+}
 
 /**
  * Prunes expired rate limit entries to prevent memory-exhaustion (DoS) risks.
@@ -139,7 +149,7 @@ function electricFence(req, res, next) {
 
     const ip = req.ip || (req.socket && req.socket.remoteAddress);
 
-    if (quarantinedIPs.has(ip)) {
+    if (ip && ip !== 'unknown' && quarantinedIPs.has(ip)) {
         return res.status(403).json({ error: "Access Denied: IP Quarantined." });
     }
 
@@ -149,7 +159,7 @@ function electricFence(req, res, next) {
 
     if (isSuspicious) {
         console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);
-        quarantinedIPs.add(ip);
+        addQuarantinedIP(ip);
         return res.status(403).json({ error: "Security Violation: Suspicious payload detected." });
     }
 
@@ -160,6 +170,7 @@ module.exports = {
     electricFence,
     securityMiddleware: electricFence,
     quarantinedIPs,
+    addQuarantinedIP,
     rateLimiter,
     rateLimitMiddleware: rateLimiter,
     ipRequestCounts
