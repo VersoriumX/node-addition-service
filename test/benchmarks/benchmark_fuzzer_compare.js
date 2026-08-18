@@ -1,5 +1,5 @@
 // benchmark_fuzzer_compare.js
-// Compares original chained replace performance with the single regex map lookup
+// Compares fuzzer performance optimizations (leet conversion & string reversal)
 
 const { generateVariations } = require('../../src/fuzzer');
 
@@ -17,6 +17,18 @@ const LEET_REGEX = /[easo]/gi;
 
 function optimizedLeet(baseString) {
     return baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+}
+
+function originalReverse(str) {
+    return str.split('').reverse().join('');
+}
+
+function optimizedReverse(str) {
+    let reversed = '';
+    for (let i = str.length - 1; i >= 0; i--) {
+        reversed += str[i];
+    }
+    return reversed;
 }
 
 const testStr = "The quick brown fox jumps over the lazy dog. Esoteric expressions and security standards are super critical!";
@@ -40,5 +52,35 @@ const endOptimized = parseFloat(process.hrtime.bigint()) / 1e6;
 const optimizedTime = endOptimized - startOptimized;
 console.log(`Optimized Single Regex Pass: ${optimizedTime.toFixed(4)}ms`);
 
-const speedup = ((originalTime - optimizedTime) / originalTime) * 100;
-console.log(`Estimated Performance Gain: ${speedup.toFixed(2)}% faster\n`);
+const speedupLeet = ((originalTime - optimizedTime) / originalTime) * 100;
+console.log(`Estimated Performance Gain: ${speedupLeet.toFixed(2)}% faster\n`);
+
+console.log("--- Benchmarking String Reversal (500,000 iterations) ---");
+
+const startRevArray = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    originalReverse(testStr);
+}
+const endRevArray = parseFloat(process.hrtime.bigint()) / 1e6;
+const arrayRevTime = endRevArray - startRevArray;
+console.log(`Original split('').reverse().join(''): ${arrayRevTime.toFixed(4)}ms`);
+
+const startRevLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    optimizedReverse(testStr);
+}
+const endRevLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+const loopRevTime = endRevLoop - startRevLoop;
+console.log(`Optimized backward loop: ${loopRevTime.toFixed(4)}ms`);
+
+const speedupRev = ((arrayRevTime - loopRevTime) / arrayRevTime) * 100;
+console.log(`Estimated Performance Gain: ${speedupRev.toFixed(2)}% faster\n`);
+
+console.log("--- Benchmarking Full generateVariations (500,000 iterations) ---");
+
+const startGen = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    generateVariations(testStr);
+}
+const endGen = parseFloat(process.hrtime.bigint()) / 1e6;
+console.log(`generateVariations Total Execution Time: ${(endGen - startGen).toFixed(4)}ms\n`);
