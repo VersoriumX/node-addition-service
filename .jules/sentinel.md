@@ -48,3 +48,8 @@
 **Vulnerability:** Simple in-memory rate limiters track requests per client IP in a Map but do not clean up expired entries, leading to unbounded memory growth and memory-exhaustion DoS over time.
 **Learning:** Tracking request counts without pruning creates a memory leak when encountering diverse IP addresses (e.g. distributed botnets or standard internet traffic).
 **Prevention:** Implement a sliding window reset or periodic pruning (e.g. once Map size exceeds a limit) to discard expired client IP entries securely.
+
+## 2026-07-28 - Unhandled HTTP Request Timeout in node-fetch v3 (DoS)
+**Vulnerability:** External API requests in `src/api.js` relied on `{ timeout: 15000 }`, an option supported in `node-fetch` v2 but silently ignored in `node-fetch` v3. Unresponsive external endpoints could hang indefinitely, leading to socket and memory exhaustion Denial of Service (DoS).
+**Learning:** Dependency major upgrades (like `node-fetch` v2 to v3) can silently ignore deprecated options like `{ timeout }` without throwing runtime errors.
+**Prevention:** Use standard `signal: AbortSignal.timeout(ms)` for setting request timeouts when using modern Fetch or `node-fetch` v3+.

@@ -25,7 +25,9 @@ async function fetchWithCache(url, cache, headers = {}) {
 
     const fetchPromise = (async () => {
         try {
-            const response = await fetch(url, { headers, timeout: 15000 });
+            // 🛡️ Sentinel Security Enhancement: Enforce request timeout via AbortSignal.
+            // node-fetch v3 ignores legacy { timeout } option, which previously allowed hanging requests to cause DoS.
+            const response = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
