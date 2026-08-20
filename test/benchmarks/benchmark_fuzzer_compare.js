@@ -42,3 +42,36 @@ console.log(`Optimized Single Regex Pass: ${optimizedTime.toFixed(4)}ms`);
 
 const speedup = ((originalTime - optimizedTime) / originalTime) * 100;
 console.log(`Estimated Performance Gain: ${speedup.toFixed(2)}% faster\n`);
+
+console.log("--- Benchmarking String Reversal (500,000 iterations) ---");
+
+function splitReverseJoin(str) {
+    return str.split('').reverse().join('');
+}
+
+function loopReverse(str) {
+    let res = '';
+    for (let i = str.length - 1; i >= 0; i--) {
+        res += str[i];
+    }
+    return res;
+}
+
+const startSplit = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    splitReverseJoin(testStr);
+}
+const endSplit = parseFloat(process.hrtime.bigint()) / 1e6;
+const splitTime = endSplit - startSplit;
+console.log(`split().reverse().join(): ${splitTime.toFixed(4)}ms`);
+
+const startLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    loopReverse(testStr);
+}
+const endLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+const loopTime = endLoop - startLoop;
+console.log(`Loop reverseString: ${loopTime.toFixed(4)}ms`);
+
+const reverseSpeedup = ((splitTime - loopTime) / splitTime) * 100;
+console.log(`Estimated Performance Gain: ${reverseSpeedup.toFixed(2)}% faster\n`);
