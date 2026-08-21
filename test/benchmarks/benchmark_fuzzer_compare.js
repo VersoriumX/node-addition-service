@@ -19,8 +19,40 @@ function optimizedLeet(baseString) {
     return baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
 }
 
+function originalReverse(str) {
+    return str.split('').reverse().join('');
+}
+
+function optimizedReverse(str) {
+    let rev = '';
+    for (let i = str.length - 1; i >= 0; i--) {
+        rev += str[i];
+    }
+    return rev;
+}
+
 const testStr = "The quick brown fox jumps over the lazy dog. Esoteric expressions and security standards are super critical!";
 const iterations = 500000;
+
+console.log("--- Benchmarking String Reversal (500,000 iterations) ---");
+const startOrigRev = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    originalReverse(testStr);
+}
+const endOrigRev = parseFloat(process.hrtime.bigint()) / 1e6;
+const origRevTime = endOrigRev - startOrigRev;
+console.log(`Original split('').reverse().join(''): ${origRevTime.toFixed(4)}ms`);
+
+const startOptRev = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    optimizedReverse(testStr);
+}
+const endOptRev = parseFloat(process.hrtime.bigint()) / 1e6;
+const optRevTime = endOptRev - startOptRev;
+console.log(`Optimized backward loop: ${optRevTime.toFixed(4)}ms`);
+
+const revSpeedup = ((origRevTime - optRevTime) / origRevTime) * 100;
+console.log(`Estimated Reversal Performance Gain: ${revSpeedup.toFixed(2)}% faster\n`);
 
 console.log("--- Benchmarking Leet Conversion (500,000 iterations) ---");
 
