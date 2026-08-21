@@ -62,7 +62,7 @@ function addToken(name, value) {
 }
 
 function getTokenValue(name) {
-    if (!name || typeof name !== 'string') return null;
+    if (!name || typeof name !== 'string' || name.length > 100) return null;
     // Null-prototype object prevents access to inherited properties
     return tokens[name] !== undefined ? tokens[name] : null;
 }
@@ -108,6 +108,9 @@ function getAllTokensETag() {
 }
 
 function updateToken(name, value) {
+    if (typeof name !== 'string' || name.length > 100) {
+        throw new Error('Invalid token name');
+    }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
@@ -127,6 +130,9 @@ function updateToken(name, value) {
 }
 
 function deleteToken(name) {
+    if (typeof name !== 'string' || name.length > 100) {
+        throw new Error('Invalid token name');
+    }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
