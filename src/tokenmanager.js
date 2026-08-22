@@ -108,6 +108,10 @@ function getAllTokensETag() {
 }
 
 function updateToken(name, value) {
+    // 🛡️ Sentinel: Enforce string type and length limit to prevent memory bloat and injection risks
+    if (typeof name !== 'string' || name.length > 100) {
+        throw new Error('Invalid token name');
+    }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
@@ -127,6 +131,10 @@ function updateToken(name, value) {
 }
 
 function deleteToken(name) {
+    // 🛡️ Sentinel: Enforce string type and length limit to prevent memory bloat and injection risks
+    if (typeof name !== 'string' || name.length > 100) {
+        throw new Error('Invalid token name');
+    }
     if (SENSITIVE_KEYS.includes(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
