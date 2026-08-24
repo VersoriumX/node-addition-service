@@ -137,9 +137,10 @@ function electricFence(req, res, next) {
         res.setHeader('X-XSS-Protection', '1; mode=block');
     }
 
-    const ip = req.ip || (req.socket && req.socket.remoteAddress);
+    const rawIp = req.ip || (req.socket && req.socket.remoteAddress);
+    const ip = (rawIp && rawIp !== 'unknown') ? rawIp : null;
 
-    if (quarantinedIPs.has(ip)) {
+    if (ip && quarantinedIPs.has(ip)) {
         return res.status(403).json({ error: "Access Denied: IP Quarantined." });
     }
 
@@ -148,8 +149,15 @@ function electricFence(req, res, next) {
     const isSuspicious = checkObject(req.query) || checkObject(req.body);
 
     if (isSuspicious) {
-        console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);
-        quarantinedIPs.add(ip);
+        if (ip) {
+            console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);
+            // 🛡️ Sentinel Security Enhancement: Enforce size limit (max 1000) with FIFO eviction on quarantinedIPs to prevent memory exhaustion DoS.
+            if (quarantinedIPs.size >= 1000) {
+                const oldestIp = quarantinedIPs.values().next().value;
+                quarantinedIPs.delete(oldestIp);
+            }
+            quarantinedIPs.add(ip);
+        }
         return res.status(403).json({ error: "Security Violation: Suspicious payload detected." });
     }
 

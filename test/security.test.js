@@ -121,4 +121,48 @@ describe('Electric Fence Security Middleware', () => {
         expect(statusSet).to.equal(403);
         expect(quarantinedIPs.has('10.10.10.10')).to.be.true;
     });
+
+    it('should not quarantine unknown or unresolved IP addresses', () => {
+        const suspiciousPattern = '**/**/**';
+        const req = { query: { path: suspiciousPattern }, body: {}, ip: 'unknown' };
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: (m) => { jsonSent = m; }
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        expect(jsonSent.error).to.contain('Security Violation');
+        expect(quarantinedIPs.has('unknown')).to.be.false;
+        expect(quarantinedIPs.size).to.equal(0);
+    });
+
+    it('should enforce maximum size limit of 1000 entries on quarantinedIPs with FIFO eviction', () => {
+        // Fill quarantinedIPs with 1000 entries
+        for (let i = 0; i < 1000; i++) {
+            quarantinedIPs.add(`192.168.1.${i}`);
+        }
+        expect(quarantinedIPs.size).to.equal(1000);
+
+        const suspiciousPattern = '**/**/**';
+        const req = { query: { path: suspiciousPattern }, body: {}, ip: '10.0.0.1' };
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: (m) => { jsonSent = m; }
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        expect(quarantinedIPs.size).to.equal(1000);
+        expect(quarantinedIPs.has('192.168.1.0')).to.be.false; // Oldest evicted
+        expect(quarantinedIPs.has('10.0.0.1')).to.be.true; // Newest added
+    });
 });
