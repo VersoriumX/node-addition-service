@@ -8,6 +8,16 @@ const app = express();
 app.disable('x-powered-by');
 const PORT = process.env.PORT || 3000;
 
+// 🛡️ Sentinel Security Enhancement: Standard HTTP security headers for defense-in-depth.
+app.use((req, res, next) => {
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self'");
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
+
 // Middleware
 app.use('/api', rateLimiter); // Protect backend API endpoints
 app.use(express.json());
@@ -73,10 +83,24 @@ Disallow: /api/
 });
 
 // Default fallback for API routes
-app.all('/api/*', (req, res) => {
+app.use('/api', (req, res) => {
     res.status(404).json({ error: 'API endpoint not found' });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// 🛡️ Sentinel Security Enhancement: Global error handling middleware.
+// Intercepts malformed payloads/syntax errors to avoid exposing internal stack traces.
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+    console.error('Unhandled server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
 });
+
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
