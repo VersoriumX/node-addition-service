@@ -139,4 +139,62 @@ describe('Electric Fence Security Middleware', () => {
         expect(statusSet).to.equal(403);
         expect(quarantinedIPs.has('10.10.10.10')).to.be.true;
     });
+
+    it('should not quarantine or block the unknown/undefined IP address', () => {
+        const suspiciousPattern = '**/**/**';
+        const req = { query: { path: suspiciousPattern }, body: {}, ip: undefined };
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: (m) => { jsonSent = m; }
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        expect(quarantinedIPs.has('unknown')).to.be.false;
+        expect(quarantinedIPs.has(undefined)).to.be.false;
+
+        // Ensure that a subsequent normal request with undefined ip is not blocked
+        const cleanReq = { query: { a: '1' }, body: {}, ip: undefined };
+        let cleanNextCalled = false;
+        const cleanRes = { setHeader: () => {} };
+        electricFence(cleanReq, cleanRes, () => { cleanNextCalled = true; });
+        expect(cleanNextCalled).to.be.true;
+    });
+
+    it('should limit quarantinedIPs size to 1000 and evict oldest via FIFO', () => {
+        // Pre-fill quarantinedIPs to the limit
+        for (let i = 0; i < 1000; i++) {
+            quarantinedIPs.add(`192.168.1.${i}`);
+        }
+        expect(quarantinedIPs.size).to.equal(1000);
+
+        // First added is 192.168.1.0, should be the oldest
+        expect(quarantinedIPs.has('192.168.1.0')).to.be.true;
+
+        // Trigger a quarantine for a new IP '172.16.0.1'
+        const suspiciousPattern = '**/**/**';
+        const req = { query: { path: suspiciousPattern }, body: {}, ip: '172.16.0.1' };
+        let statusSet = 0;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: () => {}
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        // The size should still be 1000
+        expect(quarantinedIPs.size).to.equal(1000);
+        // The new IP should be quarantined
+        expect(quarantinedIPs.has('172.16.0.1')).to.be.true;
+        // The oldest IP '192.168.1.0' should have been evicted
+        expect(quarantinedIPs.has('192.168.1.0')).to.be.false;
+        // The second oldest '192.168.1.1' should still exist
+        expect(quarantinedIPs.has('192.168.1.1')).to.be.true;
+    });
 });
