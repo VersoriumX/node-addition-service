@@ -143,9 +143,9 @@ function electricFence(req, res, next) {
         return res.status(403).json({ error: "Access Denied: IP Quarantined." });
     }
 
-    // Inspect query and body for potential ReDoS payloads
+    // Inspect query, body, and params for potential ReDoS payloads
     // ⚡ Bolt Optimization: Manual loop to avoid Object.values() array allocation and some() overhead.
-    const isSuspicious = checkObject(req.query) || checkObject(req.body);
+    const isSuspicious = checkObject(req.query) || checkObject(req.body) || checkObject(req.params);
 
     if (isSuspicious) {
         console.warn(`Suspicious activity detected from IP: ${ip}. Quarantining actor.`);

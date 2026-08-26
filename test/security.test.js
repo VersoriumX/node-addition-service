@@ -98,6 +98,24 @@ describe('Electric Fence Security Middleware', () => {
         expect(quarantinedIPs.has('8.8.8.8')).to.be.true;
     });
 
+    it('should quarantine and block suspicious requests with malicious payload in req.params', () => {
+        const suspiciousPattern = '**/**/**';
+        const req = { query: {}, body: {}, params: { id: suspiciousPattern }, ip: '11.11.11.11' };
+        let statusSet = 0;
+        let jsonSent = null;
+        const res = {
+            status: (s) => { statusSet = s; return res; },
+            json: (m) => { jsonSent = m; }
+        };
+        const next = () => { throw new Error('Next should not be called'); };
+
+        electricFence(req, res, next);
+
+        expect(statusSet).to.equal(403);
+        expect(jsonSent.error).to.contain('Security Violation');
+        expect(quarantinedIPs.has('11.11.11.11')).to.be.true;
+    });
+
     it('should allow safe array payloads and block suspicious array elements', () => {
         // Safe array
         const safeReq = { query: {}, body: { items: ['safe1', 'safe2'] }, ip: '1.2.3.4' };
