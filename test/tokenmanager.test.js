@@ -55,4 +55,12 @@ describe('Token Manager', () => {
         expect(() => addToken('Token; DROP TABLE', 100)).to.throw('Invalid token name: contains invalid characters');
         expect(() => addToken('Token%', 100)).to.throw('Invalid token name: contains invalid characters');
     });
+
+    it('should reject non-string or long names in updateToken and deleteToken', () => {
+        const longName = 'a'.repeat(101);
+        expect(() => updateToken(longName, 100)).to.throw('Invalid token name');
+        expect(() => updateToken(12345, 100)).to.throw('Invalid token name');
+        expect(() => deleteToken(longName)).to.throw('Invalid token name');
+        expect(() => deleteToken(12345)).to.throw('Invalid token name');
+    });
 });
