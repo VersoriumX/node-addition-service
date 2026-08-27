@@ -136,4 +136,29 @@ describe('In-Memory Rate Limiter Middleware', () => {
         // All 2005 expired entries should be removed because they resetTime <= now.
         expect(ipRequestCounts.size).to.be.lessThan(10);
     });
+
+    it('should allow requests with unknown IP without rate limiting to prevent global DoS', () => {
+        const req = { ip: 'unknown' };
+        let statusSet = null;
+        const res = {
+            status: (s) => {
+                statusSet = s;
+                return res;
+            },
+            json: () => {}
+        };
+
+        let nextCalls = 0;
+        const next = () => {
+            nextCalls++;
+        };
+
+        for (let i = 0; i < 150; i++) {
+            rateLimiter(req, res, next);
+        }
+
+        expect(nextCalls).to.equal(150);
+        expect(statusSet).to.be.null;
+        expect(ipRequestCounts.has('unknown')).to.be.false;
+    });
 });
