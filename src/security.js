@@ -25,6 +25,9 @@ function pruneRateLimitMap() {
  */
 function rateLimiter(req, res, next) {
     const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    if (ip === 'unknown') {
+        return next();
+    }
     const now = Date.now();
     const limit = 100;
     const windowMs = 60 * 1000; // 1 minute
