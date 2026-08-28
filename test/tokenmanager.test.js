@@ -63,4 +63,11 @@ describe('Token Manager', () => {
         expect(() => deleteToken(longName)).to.throw('Invalid token name');
         expect(() => deleteToken(12345)).to.throw('Invalid token name');
     });
+
+    it('should return null in getTokenValue when called with non-string or excessively long token names', () => {
+        const longName = 'a'.repeat(101);
+        expect(getTokenValue(longName)).to.be.null;
+        expect(getTokenValue(12345)).to.be.null;
+        expect(getTokenValue(null)).to.be.null;
+    });
 });
