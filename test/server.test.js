@@ -35,6 +35,24 @@ describe('Server.js Integration & Security Headers', () => {
         expect(res.headers.get('x-powered-by')).to.be.null;
     });
 
+    it('should serve tokens with ETag and support conditional 304 responses in server.js', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`);
+        expect(res.status).to.equal(200);
+        const etag = res.headers.get('etag');
+        expect(etag).to.be.a('string');
+
+        const tokens = await res.json();
+        expect(tokens).to.be.an('array');
+
+        // Test conditional GET
+        const res304 = await fetch(`${baseUrl}/api/tokens`, {
+            headers: {
+                'If-None-Match': etag
+            }
+        });
+        expect(res304.status).to.equal(304);
+    });
+
     it('should intercept malformed JSON payloads and return HTTP 400 without leaking stack traces', async () => {
         const res = await fetch(`${baseUrl}/api/tokens`, {
             method: 'POST',
