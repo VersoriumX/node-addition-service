@@ -48,4 +48,19 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Invalid JSON payload');
     });
+
+    it('should reject token names exceeding 100 characters with 400 Bad Request', async () => {
+        const longName = 'A'.repeat(101);
+        const res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({ name: longName, value: 100 })
+        });
+
+        expect(res.status).to.equal(400);
+        const data = await res.json();
+        expect(data).to.have.property('error').that.includes('Invalid token name');
+    });
 });
