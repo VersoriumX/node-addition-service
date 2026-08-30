@@ -42,6 +42,10 @@ app.post('/api/tokens', async (req, res) => {
         if (!name || value === undefined) {
             return res.status(400).json({ error: 'Name and value are required' });
         }
+        // 🛡️ Sentinel: Enforce max input length check on token name to prevent DoS/memory bloat
+        if (typeof name !== 'string' || name.length > 100) {
+            return res.status(400).json({ error: 'Invalid token name: length must not exceed 100 characters' });
+        }
         await addToken(name, value);
         res.status(201).json({ message: 'Token added successfully' });
     } catch (error) {
