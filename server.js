@@ -1,8 +1,9 @@
 const express = require('express');
 const path = require('path');
-const { addToken, getAllTokens } = require('./src/tokenmanager');
+const { addToken, getAllTokensJSON, getAllTokensETag } = require('./src/tokenmanager');
 const { electricFence, rateLimiter } = require('./src/security');
-const { fetchMetalPrices, fetchCryptoPrices } = require('./src/api');
+const { fetchMetalPrices, fetchCryptoPrices, getMetalCache, getCryptoCache, isMetalCacheValid, isCryptoCacheValid } = require('./src/api');
+const { isETagMatch } = require('./index');
 
 const app = express();
 app.disable('x-powered-by');
@@ -24,12 +25,22 @@ app.use(express.json());
 app.use(electricFence);
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API for Tokens
+/**
+ * ⚡ Bolt Optimization:
+ * Replaced Object.keys().map() and JSON.stringify() with pre-serialized JSON & pre-calculated ETags.
+ * Bypasses serialization and supports RFC 7232 conditional GET (304 Not Modified) responses.
+ */
 app.get('/api/tokens', (req, res) => {
     try {
-        const tokens = getAllTokens();
-        const tokenArray = Object.keys(tokens).map(name => ({ name, value: tokens[name] }));
-        res.json(tokenArray);
+        const etag = getAllTokensETag();
+        if (isETagMatch(req.headers['if-none-match'], etag)) {
+            return res.set('ETag', etag).status(304).end();
+        }
+
+        res.set({
+            'Content-Type': 'application/json',
+            'ETag': etag
+        }).send(getAllTokensJSON());
     } catch (error) {
         console.error('Error fetching tokens:', error);
         res.status(500).json({ error: 'Failed to load tokens' });
@@ -50,11 +61,34 @@ app.post('/api/tokens', async (req, res) => {
     }
 });
 
-// API for Prices
+/**
+ * ⚡ Bolt Optimization:
+ * Serving pre-serialized JSON and using pre-calculated ETags for Price APIs in server.js.
+ */
 app.get('/api/prices/metals', async (req, res) => {
     try {
-        const prices = await fetchMetalPrices();
-        res.json(prices);
+        if (isMetalCacheValid()) {
+            const cache = getMetalCache();
+            if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
+                return res.set('ETag', cache.etag).status(304).end();
+            }
+            return res.set({
+                'Content-Type': 'application/json',
+                'ETag': cache.etag
+            }).send(cache.json);
+        }
+
+        await fetchMetalPrices();
+        const cache = getMetalCache();
+
+        if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
+            return res.set('ETag', cache.etag).status(304).end();
+        }
+
+        res.set({
+            'Content-Type': 'application/json',
+            'ETag': cache.etag
+        }).send(cache.json);
     } catch (err) {
         console.error('Error fetching metal prices:', err);
         res.status(500).json({ error: 'Failed to fetch metal prices' });
@@ -63,8 +97,28 @@ app.get('/api/prices/metals', async (req, res) => {
 
 app.get('/api/prices/crypto', async (req, res) => {
     try {
-        const prices = await fetchCryptoPrices();
-        res.json(prices);
+        if (isCryptoCacheValid()) {
+            const cache = getCryptoCache();
+            if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
+                return res.set('ETag', cache.etag).status(304).end();
+            }
+            return res.set({
+                'Content-Type': 'application/json',
+                'ETag': cache.etag
+            }).send(cache.json);
+        }
+
+        await fetchCryptoPrices();
+        const cache = getCryptoCache();
+
+        if (isETagMatch(req.headers['if-none-match'], cache.etag)) {
+            return res.set('ETag', cache.etag).status(304).end();
+        }
+
+        res.set({
+            'Content-Type': 'application/json',
+            'ETag': cache.etag
+        }).send(cache.json);
     } catch (err) {
         console.error('Error fetching crypto prices:', err);
         res.status(500).json({ error: 'Failed to fetch crypto prices' });

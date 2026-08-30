@@ -48,4 +48,17 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Invalid JSON payload');
     });
+
+    it('should serve pre-serialized JSON and handle 304 conditional GETs for /api/tokens', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`);
+        expect(res.status).to.equal(200);
+        const etag = res.headers.get('etag');
+        expect(etag).to.be.a('string');
+
+        const cachedRes = await fetch(`${baseUrl}/api/tokens`, {
+            headers: { 'if-none-match': etag }
+        });
+        expect(cachedRes.status).to.equal(304);
+        expect(cachedRes.headers.get('etag')).to.equal(etag);
+    });
 });
