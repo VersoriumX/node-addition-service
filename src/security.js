@@ -5,12 +5,14 @@
 
 const quarantinedIPs = new Set();
 const ipRequestCounts = new Map();
+let lastPruneTime = 0;
 
 /**
  * Prunes expired rate limit entries to prevent memory-exhaustion (DoS) risks.
  */
 function pruneRateLimitMap() {
     const now = Date.now();
+    lastPruneTime = now;
     for (const [ip, entry] of ipRequestCounts.entries()) {
         if (entry.resetTime <= now) {
             ipRequestCounts.delete(ip);
@@ -32,16 +34,17 @@ function rateLimiter(req, res, next) {
     let entry = ipRequestCounts.get(ip);
     if (!entry || entry.resetTime <= now) {
         entry = {
-            count: 0,
+            count: 1,
             resetTime: now + windowMs
         };
+        ipRequestCounts.set(ip, entry);
+    } else {
+        entry.count += 1;
     }
 
-    entry.count += 1;
-    ipRequestCounts.set(ip, entry);
-
-    // Limit memory footprint and prevent DoS by pruning stale entries when the Map grows too large
-    if (ipRequestCounts.size > 2000) {
+    // Limit memory footprint and prevent DoS by pruning stale entries when the Map grows too large.
+    // ⚡ Bolt Optimization: Throttle full-map scans so we don't re-scan all 2000+ entries on every request
+    if (ipRequestCounts.size > 2000 && (now - lastPruneTime >= 1000)) {
         pruneRateLimitMap();
     }
 
