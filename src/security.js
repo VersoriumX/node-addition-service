@@ -55,6 +55,9 @@ function rateLimiter(req, res, next) {
     }
 
     if (entry.count > limit) {
+        if (res.setHeader) {
+            res.setHeader('Retry-After', resetSeconds);
+        }
         return res.status(429).json({ error: "Too many requests, please try again later." });
     }
 
