@@ -48,4 +48,22 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Invalid JSON payload');
     });
+
+    it('should return pre-serialized JSON tokens with ETag and respond with 304 on match', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`);
+        expect(res.status).to.equal(200);
+        const etag = res.headers.get('etag');
+        expect(etag).to.be.a('string');
+        const tokens = await res.json();
+        expect(tokens).to.be.an('array');
+
+        // Test conditional GET
+        const res304 = await fetch(`${baseUrl}/api/tokens`, {
+            headers: {
+                'if-none-match': etag
+            }
+        });
+        expect(res304.status).to.equal(304);
+        expect(res304.headers.get('etag')).to.equal(etag);
+    });
 });
