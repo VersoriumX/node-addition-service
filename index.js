@@ -110,9 +110,21 @@ app.use(electricFence); // Apply Electric Fence Security Middleware
 
 // Original legacy route
 app.get('/add', (req, res) => {
-  const a = parseInt(req.query.a);
-  const b = parseInt(req.query.b);
-  res.send(`Hello World!: ${add(a, b)}`);
+  const { a, b } = req.query;
+  if (a === undefined || b === undefined) {
+    return res.status(400).send('Parameters a and b are required');
+  }
+  const strA = String(a);
+  const strB = String(b);
+  if (strA.length > 100 || strB.length > 100) {
+    return res.status(400).send('Input length must not exceed 100 characters');
+  }
+  const parsedA = parseInt(strA, 10);
+  const parsedB = parseInt(strB, 10);
+  if (Number.isNaN(parsedA) || Number.isNaN(parsedB)) {
+    return res.status(400).send('Parameters a and b must be valid numbers');
+  }
+  res.send(`Hello World!: ${add(parsedA, parsedB)}`);
 });
 
 /**
