@@ -5,6 +5,7 @@
 
 const quarantinedIPs = new Set();
 const ipRequestCounts = new Map();
+let lastPruneTime = 0;
 
 /**
  * Prunes expired rate limit entries to prevent memory-exhaustion (DoS) risks.
@@ -35,13 +36,17 @@ function rateLimiter(req, res, next) {
             count: 0,
             resetTime: now + windowMs
         };
+        // ⚡ Bolt Optimization: Only call Map.set when creating a new IP entry.
+        // Mutating entry.count updates existing entries in-place without redundant map set operations.
+        ipRequestCounts.set(ip, entry);
     }
 
     entry.count += 1;
-    ipRequestCounts.set(ip, entry);
 
-    // Limit memory footprint and prevent DoS by pruning stale entries when the Map grows too large
-    if (ipRequestCounts.size > 2000) {
+    // ⚡ Bolt Optimization: Throttle pruneRateLimitMap execution (at most once per 1000ms)
+    // when Map size exceeds 2000. This avoids O(N) full-map iterations on every incoming request.
+    if (ipRequestCounts.size > 2000 && (now - lastPruneTime > 1000)) {
+        lastPruneTime = now;
         pruneRateLimitMap();
     }
 
