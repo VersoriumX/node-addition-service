@@ -48,4 +48,18 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Invalid JSON payload');
     });
+
+    it('should return 200 with tokens array and ETag, and 304 on matching If-None-Match header for GET /api/tokens', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`);
+        expect(res.status).to.equal(200);
+        const etag = res.headers.get('etag');
+        expect(etag).to.be.a('string');
+        const data = await res.json();
+        expect(data).to.be.an('array');
+
+        const res304 = await fetch(`${baseUrl}/api/tokens`, {
+            headers: { 'if-none-match': etag }
+        });
+        expect(res304.status).to.equal(304);
+    });
 });
