@@ -187,6 +187,37 @@ describe('Static File Caching & Routes', () => {
         });
     });
 
+    describe('GET /add Endpoint Input Validation', () => {
+        it('should return 200 with result for valid numeric parameters', async () => {
+            const res = await fetch(`${baseUrl}/add?a=10&b=20`);
+            expect(res.status).to.equal(200);
+            const body = await res.text();
+            expect(body).to.equal('Hello World!: 30');
+        });
+
+        it('should return 400 when parameters a or b are missing', async () => {
+            const res = await fetch(`${baseUrl}/add?a=10`);
+            expect(res.status).to.equal(400);
+            const body = await res.text();
+            expect(body).to.contain('Parameters a and b are required');
+        });
+
+        it('should return 400 when parameters are not valid numbers', async () => {
+            const res = await fetch(`${baseUrl}/add?a=abc&b=20`);
+            expect(res.status).to.equal(400);
+            const body = await res.text();
+            expect(body).to.contain('Parameters a and b must be valid numbers');
+        });
+
+        it('should return 400 when input length exceeds 100 characters', async () => {
+            const longString = '1'.repeat(101);
+            const res = await fetch(`${baseUrl}/add?a=${longString}&b=20`);
+            expect(res.status).to.equal(400);
+            const body = await res.text();
+            expect(body).to.contain('Input length must not exceed 100 characters');
+        });
+    });
+
     describe('Global Error Handler', () => {
         it('should handle malformed JSON and return 400 with a clean message', async () => {
             const res = await fetch(`${baseUrl}/api/tokens`, {
