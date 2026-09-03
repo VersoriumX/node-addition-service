@@ -83,6 +83,7 @@ describe('In-Memory Rate Limiter Middleware', () => {
         expect(statusSet).to.equal(429);
         expect(jsonSent.error).to.contain('Too many requests');
         expect(resHeaders['X-RateLimit-Remaining']).to.equal(0);
+        expect(resHeaders['Retry-After']).to.be.a('number');
     });
 
     it('should reset window after resetTime expires', (done) => {
