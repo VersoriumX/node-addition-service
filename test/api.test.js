@@ -1,8 +1,15 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
+const fs = require('fs');
+const path = require('path');
 const { fetchMetalPrices, fetchCryptoPrices } = require('../src/api');
 
-describe('API Service Error Log Redaction', () => {
+describe('API Service Security & Timeout Configuration', () => {
+    it('should use AbortSignal.timeout to enforce external request timeouts', () => {
+        const apiSource = fs.readFileSync(path.join(__dirname, '../src/api.js'), 'utf8');
+        expect(apiSource).to.contain('signal: AbortSignal.timeout(15000)');
+    });
+
     it('should redact sensitive query params in error logs when fetching metal prices fails', async () => {
         let loggedError = '';
         const originalConsoleError = console.error;
