@@ -19,6 +19,7 @@ function currentCheckValue(val) {
 
 function optimizedCheckValue(val) {
     if (typeof val === 'string') {
+        if (val.length < 6) return false;
         if (val.length > 1000) return true;
 
         let pos = val.indexOf('**');
@@ -66,6 +67,8 @@ function runBenchmark(val, scenarioName) {
     console.log(`Speedup:   ${speedup.toFixed(2)}% faster\n`);
 }
 
+runBenchmark("id", "Short Key ('id')");
+runBenchmark("name", "Short Key ('name')");
 runBenchmark("Hello world, this is a standard string with no asterisks.", "No Asterisks");
 runBenchmark("Hello world, this is a string with ** inside it once.", "One Asterisk pair");
 runBenchmark("Hello world, this ** is a string ** with two asterisks.", "Two Asterisk pairs");
