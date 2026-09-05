@@ -48,4 +48,26 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Invalid JSON payload');
     });
+
+    it('should reject POST /api/tokens requests with invalid or non-finite token names/values', async () => {
+        // Test oversized token name
+        let res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name: 'a'.repeat(101), value: 100 })
+        });
+        expect(res.status).to.equal(400);
+        let data = await res.json();
+        expect(data).to.have.property('error', 'Invalid token name or value');
+
+        // Test non-numeric token value
+        res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name: 'validName', value: 'not-a-number' })
+        });
+        expect(res.status).to.equal(400);
+        data = await res.json();
+        expect(data).to.have.property('error', 'Invalid token name or value');
+    });
 });
