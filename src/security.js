@@ -78,6 +78,11 @@ function checkValue(val) {
         // Simple length check - common ReDoS payloads are often very long
         if (val.length > 1000) return true;
 
+        // ⚡ Bolt Optimization: Fast path returning false early for strings with length < 6.
+        // Detecting 3 non-overlapping '**' pairs requires at least 6 characters. This avoids
+        // indexOf string scanning on standard object keys and short parameter values.
+        if (val.length < 6) return false;
+
         // ⚡ Bolt Optimization: Replace redundant includes() and indexOf() scans
         // with a single-pass indexOf() loop. This completely avoids double-scanning the string
         // for incoming request query and body payloads, improving speed and efficiency.
