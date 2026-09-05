@@ -21,6 +21,9 @@ function optimizedCheckValue(val) {
     if (typeof val === 'string') {
         if (val.length > 1000) return true;
 
+        // Fast path: string length < 6 can never contain 3 non-overlapping '**' pairs.
+        if (val.length < 6) return false;
+
         let pos = val.indexOf('**');
         if (pos !== -1) {
             let count = 1;
@@ -66,6 +69,9 @@ function runBenchmark(val, scenarioName) {
     console.log(`Speedup:   ${speedup.toFixed(2)}% faster\n`);
 }
 
+runBenchmark("id", "Short String Key ('id')");
+runBenchmark("name", "Short String Key ('name')");
+runBenchmark("10", "Short String Param ('10')");
 runBenchmark("Hello world, this is a standard string with no asterisks.", "No Asterisks");
 runBenchmark("Hello world, this is a string with ** inside it once.", "One Asterisk pair");
 runBenchmark("Hello world, this ** is a string ** with two asterisks.", "Two Asterisk pairs");
