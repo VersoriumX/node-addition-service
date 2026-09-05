@@ -75,7 +75,9 @@ function rateLimiter(req, res, next) {
  */
 function checkValue(val) {
     if (typeof val === 'string') {
-        // Simple length check - common ReDoS payloads are often very long
+        // ⚡ Bolt Optimization: Detecting 3 non-overlapping '**' pairs requires at least 6 characters.
+        // Returning false early for strings < 6 characters avoids calling indexOf() on standard keys & short params.
+        if (val.length < 6) return false;
         if (val.length > 1000) return true;
 
         // ⚡ Bolt Optimization: Replace redundant includes() and indexOf() scans
