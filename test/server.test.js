@@ -48,4 +48,18 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Invalid JSON payload');
     });
+
+    it('should handle null JSON payloads gracefully and return HTTP 400', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: 'null'
+        });
+
+        expect(res.status).to.equal(400);
+        const data = await res.json();
+        expect(data).to.have.property('error');
+    });
 });
