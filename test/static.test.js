@@ -218,7 +218,7 @@ describe('Static File Caching & Routes', () => {
         });
     });
 
-    describe('Global Error Handler', () => {
+    describe('Global Error Handler & Null JSON Payload Handling', () => {
         it('should handle malformed JSON and return 400 with a clean message', async () => {
             const res = await fetch(`${baseUrl}/api/tokens`, {
                 method: 'POST',
@@ -230,6 +230,19 @@ describe('Static File Caching & Routes', () => {
             expect(res.status).to.equal(400);
             const data = await res.json();
             expect(data).to.have.property('error', 'Invalid JSON payload');
+        });
+
+        it('should handle null JSON payloads on POST endpoints and return 400', async () => {
+            const res = await fetch(`${baseUrl}/api/encrypt`, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: 'null'
+            });
+            expect(res.status).to.equal(400);
+            const data = await res.json();
+            expect(data).to.have.property('error');
         });
     });
 });
