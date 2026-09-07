@@ -156,7 +156,7 @@ app.get('/api/tokens', (req, res) => {
 });
 
 app.post('/api/tokens', async (req, res) => {
-    const { name, value } = req.body;
+    const { name, value } = req.body || {};
     try {
         if (!name || value === undefined) {
             return res.status(400).json({ error: 'Name and value are required' });
@@ -237,7 +237,7 @@ app.get('/api/prices/crypto', async (req, res) => {
 
 // Encryption API
 app.post('/api/encrypt', (req, res) => {
-    const { text } = req.body;
+    const { text } = req.body || {};
     if (text === undefined || typeof text !== 'string') {
         return res.status(400).json({ error: 'Text must be a string' });
     }
@@ -252,7 +252,7 @@ app.post('/api/encrypt', (req, res) => {
 });
 
 app.post('/api/decrypt', (req, res) => {
-    const { encrypted } = req.body;
+    const { encrypted } = req.body || {};
     if (encrypted === undefined || typeof encrypted !== 'string') {
         return res.status(400).json({ error: 'Encrypted text must be a string' });
     }

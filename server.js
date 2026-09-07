@@ -78,7 +78,7 @@ app.get('/api/tokens', (req, res) => {
 });
 
 app.post('/api/tokens', async (req, res) => {
-    const { name, value } = req.body;
+    const { name, value } = req.body || {};
     try {
         if (!name || value === undefined) {
             return res.status(400).json({ error: 'Name and value are required' });
