@@ -1,23 +1,7 @@
 const { performance } = require('perf_hooks');
 
+// Before fast-path optimization
 function currentCheckValue(val) {
-    if (typeof val === 'string') {
-        if (val.length > 1000) return true;
-
-        if (val.includes('**')) {
-            let count = 0;
-            let pos = val.indexOf('**');
-            while (pos !== -1) {
-                count++;
-                if (count > 2) return true;
-                pos = val.indexOf('**', pos + 2);
-            }
-        }
-    }
-    return false;
-}
-
-function optimizedCheckValue(val) {
     if (typeof val === 'string') {
         if (val.length > 1000) return true;
 
@@ -35,7 +19,27 @@ function optimizedCheckValue(val) {
     return false;
 }
 
-const ITERATIONS = 2000000; // 2 million iterations
+// Optimized with short-string fast path (< 6 chars)
+function optimizedCheckValue(val) {
+    if (typeof val === 'string') {
+        if (val.length < 6) return false;
+        if (val.length > 1000) return true;
+
+        let pos = val.indexOf('**');
+        if (pos !== -1) {
+            let count = 1;
+            pos = val.indexOf('**', pos + 2);
+            while (pos !== -1) {
+                count++;
+                if (count > 2) return true;
+                pos = val.indexOf('**', pos + 2);
+            }
+        }
+    }
+    return false;
+}
+
+const ITERATIONS = 3000000; // 3 million iterations
 
 function runBenchmark(val, scenarioName) {
     console.log(`--- Scenario: ${scenarioName} ---`);
@@ -66,7 +70,8 @@ function runBenchmark(val, scenarioName) {
     console.log(`Speedup:   ${speedup.toFixed(2)}% faster\n`);
 }
 
-runBenchmark("Hello world, this is a standard string with no asterisks.", "No Asterisks");
-runBenchmark("Hello world, this is a string with ** inside it once.", "One Asterisk pair");
-runBenchmark("Hello world, this ** is a string ** with two asterisks.", "Two Asterisk pairs");
-runBenchmark("Hello ** world, this ** is a string ** with three asterisks.", "Three Asterisk pairs (Short Circuit)");
+runBenchmark("a", "Short string ('a')");
+runBenchmark("name", "Object key ('name')");
+runBenchmark("12345", "5-char param ('12345')");
+runBenchmark("Hello world, this is a standard string with no asterisks.", "Long string (No Asterisks)");
+runBenchmark("Hello ** world, this ** is a string ** with three asterisks.", "Three Asterisk pairs (Malicious Payload)");
