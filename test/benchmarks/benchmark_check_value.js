@@ -1,12 +1,14 @@
 const { performance } = require('perf_hooks');
 
-function currentCheckValue(val) {
+// Unoptimized checkValue without fast-path length check
+function unoptimizedCheckValue(val) {
     if (typeof val === 'string') {
         if (val.length > 1000) return true;
 
-        if (val.includes('**')) {
-            let count = 0;
-            let pos = val.indexOf('**');
+        let pos = val.indexOf('**');
+        if (pos !== -1) {
+            let count = 1;
+            pos = val.indexOf('**', pos + 2);
             while (pos !== -1) {
                 count++;
                 if (count > 2) return true;
@@ -17,9 +19,11 @@ function currentCheckValue(val) {
     return false;
 }
 
+// Optimized checkValue with fast-path length check (if val.length < 6 return false)
 function optimizedCheckValue(val) {
     if (typeof val === 'string') {
         if (val.length > 1000) return true;
+        if (val.length < 6) return false;
 
         let pos = val.indexOf('**');
         if (pos !== -1) {
@@ -42,16 +46,16 @@ function runBenchmark(val, scenarioName) {
 
     // Warm up
     for (let i = 0; i < 10000; i++) {
-        currentCheckValue(val);
+        unoptimizedCheckValue(val);
         optimizedCheckValue(val);
     }
 
-    const startCurrent = performance.now();
+    const startUnoptimized = performance.now();
     for (let i = 0; i < ITERATIONS; i++) {
-        currentCheckValue(val);
+        unoptimizedCheckValue(val);
     }
-    const endCurrent = performance.now();
-    const currentTime = endCurrent - startCurrent;
+    const endUnoptimized = performance.now();
+    const unoptimizedTime = endUnoptimized - startUnoptimized;
 
     const startOptimized = performance.now();
     for (let i = 0; i < ITERATIONS; i++) {
@@ -60,13 +64,16 @@ function runBenchmark(val, scenarioName) {
     const endOptimized = performance.now();
     const optimizedTime = endOptimized - startOptimized;
 
-    const speedup = ((currentTime - optimizedTime) / currentTime) * 100;
-    console.log(`Current:   ${currentTime.toFixed(2)}ms`);
-    console.log(`Optimized: ${optimizedTime.toFixed(2)}ms`);
-    console.log(`Speedup:   ${speedup.toFixed(2)}% faster\n`);
+    const speedup = ((unoptimizedTime - optimizedTime) / unoptimizedTime) * 100;
+    console.log(`Unoptimized: ${unoptimizedTime.toFixed(2)}ms`);
+    console.log(`Optimized:   ${optimizedTime.toFixed(2)}ms`);
+    console.log(`Speedup:     ${speedup.toFixed(2)}% faster\n`);
 }
 
-runBenchmark("Hello world, this is a standard string with no asterisks.", "No Asterisks");
+runBenchmark("a", "Short String Key ('a')");
+runBenchmark("name", "Short String Key ('name')");
+runBenchmark("123", "Short String Value ('123')");
+runBenchmark("Hello world, this is a standard string with no asterisks.", "No Asterisks (Long)");
 runBenchmark("Hello world, this is a string with ** inside it once.", "One Asterisk pair");
 runBenchmark("Hello world, this ** is a string ** with two asterisks.", "Two Asterisk pairs");
 runBenchmark("Hello ** world, this ** is a string ** with three asterisks.", "Three Asterisk pairs (Short Circuit)");
