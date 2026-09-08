@@ -66,6 +66,7 @@ describe('Static File Caching & Routes', () => {
 
             // 🛡️ Sentinel: Verify security headers
             expect(res.headers.get('content-security-policy')).to.contain("default-src 'self'");
+            expect(res.headers.get('strict-transport-security')).to.equal('max-age=31536000; includeSubDomains');
             expect(res.headers.get('x-frame-options')).to.equal('DENY');
             expect(res.headers.get('x-content-type-options')).to.equal('nosniff');
             expect(res.headers.get('referrer-policy')).to.equal('no-referrer');

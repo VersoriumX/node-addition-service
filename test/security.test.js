@@ -19,6 +19,7 @@ describe('Electric Fence Security Middleware', () => {
             expect(quarantinedIPs.has('1.2.3.4')).to.be.false;
             expect(headers['Content-Security-Policy']).to.contain("'unsafe-inline'");
             expect(headers['Content-Security-Policy']).to.contain("connect-src 'self'");
+            expect(headers['Strict-Transport-Security']).to.equal('max-age=31536000; includeSubDomains');
             expect(headers['X-Frame-Options']).to.equal('DENY');
             expect(headers['X-Content-Type-Options']).to.equal('nosniff');
             expect(headers['Referrer-Policy']).to.equal('no-referrer');
