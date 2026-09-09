@@ -1,6 +1,6 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('../src/tokenmanager');
+const { addToken, getTokenValue, updateToken, deleteToken, getAllTokensJSON, getAllTokensETag, getAllTokensArray } = require('../src/tokenmanager');
 
 describe('Token Manager', () => {
     it('should add a token', () => {
@@ -16,6 +16,27 @@ describe('Token Manager', () => {
     it('should delete a token', () => {
         deleteToken('TestToken');
         expect(getTokenValue('TestToken')).to.be.null;
+    });
+
+    it('should correctly regenerate cached JSON, ETag, and Array lazily after mutations', () => {
+        addToken('LazyCacheToken', 500);
+        const json = getAllTokensJSON();
+        const etag = getAllTokensETag();
+        const arr = getAllTokensArray();
+
+        expect(json).to.be.a('string');
+        expect(json).to.include('LazyCacheToken');
+        expect(etag).to.be.a('string');
+        expect(arr).to.be.an('array');
+        expect(arr.some(t => t.name === 'LazyCacheToken' && t.value === 500)).to.be.true;
+
+        updateToken('LazyCacheToken', 999);
+        const updatedJson = getAllTokensJSON();
+        expect(updatedJson).to.include('999');
+
+        deleteToken('LazyCacheToken');
+        const deletedJson = getAllTokensJSON();
+        expect(deletedJson).to.not.include('LazyCacheToken');
     });
 
     it('should reject a token name longer than 100 characters', () => {
