@@ -19,6 +19,17 @@ let tokensETagCache = null;
 
 /**
  * ⚡ Bolt Optimization:
+ * Lazy cache invalidation clears cached JSON and ETags on mutations,
+ * deferring regeneration until requested by getAllTokensJSON() or getAllTokensETag().
+ */
+function invalidateCache() {
+    tokensJSONCache = null;
+    tokensETagCache = null;
+    tokensArrayCache = null;
+}
+
+/**
+ * ⚡ Bolt Optimization:
  * Optimized updateCache to avoid building the frozen tokensArrayCache by default.
  * Uses a manual loop instead of Object.keys().map() for better performance.
  * tokensArrayCache is now lazily populated only when requested.
@@ -57,7 +68,7 @@ function addToken(name, value) {
         throw new Error('Invalid token name: sensitive key');
     }
     tokens[name] = value;
-    updateCache();
+    invalidateCache();
     return saveTokens(tokens);
 }
 
@@ -123,7 +134,7 @@ function updateToken(name, value) {
             throw new Error('Invalid token value');
         }
         tokens[name] = value;
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
@@ -143,7 +154,7 @@ function deleteToken(name) {
     }
     if (tokens[name] !== undefined) {
         delete tokens[name];
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
