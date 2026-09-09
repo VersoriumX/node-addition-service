@@ -53,3 +53,8 @@
 **Vulnerability:** The IP-based quarantine list (`quarantinedIPs` Set) was unbounded, allowing attackers to cause a memory-exhaustion Denial of Service (DoS) by sending suspicious payloads from many unique IP addresses. Additionally, falsy IP addresses (e.g., `undefined` or `'unknown'`) could be quarantined, which accidentally locked out all legitimate clients with unresolved IPs.
 **Learning:** Security state (like IP blocks) must never have unbounded memory footprints. Furthermore, fallback identifiers like `undefined` or `'unknown'` must be excluded from blocklists to prevent a single malicious or malformed request from denying access to everyone sharing that fallback.
 **Prevention:** Enforce a strict maximum capacity (e.g., 1000 entries) on the quarantine Set with a FIFO eviction strategy, and explicitly validate that IP addresses are known and resolved before checking or quarantining them.
+
+## 2026-08-31 - Unbounded Rate Limiter Entry Memory Footprint
+**Vulnerability:** The in-memory rate limiter tracked client requests using an `ipRequestCounts` Map. While pruning was triggered when Map size exceeded 2000, active entries under an IP flood attack from many distinct IP addresses remained unexpired, allowing the Map size to grow unbounded and pose a memory-exhaustion Denial of Service (DoS) risk.
+**Learning:** Time-based pruning alone cannot bound memory usage if incoming requests from distinct keys arrive within the active time window. A capacity limit must enforce FIFO/LRU eviction even when active entries exist.
+**Prevention:** Always pair time-based expiration with strict size upper bounds and FIFO/LRU eviction on stateful tracking structures.
