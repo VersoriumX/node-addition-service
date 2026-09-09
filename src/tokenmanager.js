@@ -41,6 +41,18 @@ function updateCache() {
 // Initial cache population
 updateCache();
 
+/**
+ * ⚡ Bolt Optimization:
+ * Lazy cache invalidation helper. Instead of eagerly re-stringifying tokens
+ * and re-computing MD5 ETags during mutations, reset cache references to null.
+ * Regeneration is deferred until requested by getAllTokensJSON() or getAllTokensETag().
+ */
+function invalidateCache() {
+    tokensJSONCache = null;
+    tokensETagCache = null;
+    tokensArrayCache = null;
+}
+
 const SENSITIVE_KEYS = ['__proto__', 'constructor', 'prototype'];
 const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
 
@@ -57,7 +69,7 @@ function addToken(name, value) {
         throw new Error('Invalid token name: sensitive key');
     }
     tokens[name] = value;
-    updateCache();
+    invalidateCache();
     return saveTokens(tokens);
 }
 
@@ -123,7 +135,7 @@ function updateToken(name, value) {
             throw new Error('Invalid token value');
         }
         tokens[name] = value;
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
@@ -143,7 +155,7 @@ function deleteToken(name) {
     }
     if (tokens[name] !== undefined) {
         delete tokens[name];
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
