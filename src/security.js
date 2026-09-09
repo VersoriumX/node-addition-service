@@ -37,6 +37,12 @@ function rateLimiter(req, res, next) {
             resetTime: now + windowMs
         };
         ipRequestCounts.set(ip, entry);
+        // 🛡️ Sentinel Security Enhancement: Prevent memory-exhaustion DoS from unbounded IP entries.
+        // Enforce a hard limit of 5000 entries on ipRequestCounts Map with FIFO eviction.
+        if (ipRequestCounts.size > 5000) {
+            const oldest = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldest);
+        }
     } else {
         // ⚡ Bolt Optimization: Mutate existing entry count in-place and avoid
         // redundant ipRequestCounts.set() calls on active cache hits.
