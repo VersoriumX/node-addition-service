@@ -1,6 +1,6 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('../src/tokenmanager');
+const { addToken, getTokenValue, updateToken, deleteToken, getAllTokensJSON, getAllTokensETag, getAllTokensArray } = require('../src/tokenmanager');
 
 describe('Token Manager', () => {
     it('should add a token', () => {
@@ -62,5 +62,29 @@ describe('Token Manager', () => {
         expect(() => updateToken(12345, 100)).to.throw('Invalid token name');
         expect(() => deleteToken(longName)).to.throw('Invalid token name');
         expect(() => deleteToken(12345)).to.throw('Invalid token name');
+    });
+
+    it('should lazily recompute JSON, ETag, and array cache after mutations', () => {
+        addToken('LazyTestToken', 500);
+        const json = getAllTokensJSON();
+        const etag = getAllTokensETag();
+        const array = getAllTokensArray();
+
+        expect(json).to.include('LazyTestToken');
+        expect(etag).to.be.a('string');
+        expect(array.some(t => t.name === 'LazyTestToken' && t.value === 500)).to.be.true;
+
+        updateToken('LazyTestToken', 600);
+        const updatedJson = getAllTokensJSON();
+        const updatedEtag = getAllTokensETag();
+        const updatedArray = getAllTokensArray();
+
+        expect(updatedJson).to.include('"value":600');
+        expect(updatedEtag).to.not.equal(etag);
+        expect(updatedArray.some(t => t.name === 'LazyTestToken' && t.value === 600)).to.be.true;
+
+        deleteToken('LazyTestToken');
+        const finalJson = getAllTokensJSON();
+        expect(finalJson).to.not.include('LazyTestToken');
     });
 });
