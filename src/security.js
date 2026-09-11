@@ -5,6 +5,7 @@
 
 const quarantinedIPs = new Set();
 const ipRequestCounts = new Map();
+const MAX_RATE_LIMIT_ENTRIES = 5000;
 let lastPruneTime = 0;
 
 /**
@@ -36,6 +37,11 @@ function rateLimiter(req, res, next) {
             count: 1,
             resetTime: now + windowMs
         };
+        // Enforce maximum capacity limit to prevent memory-exhaustion DoS from IP flooding
+        if (ipRequestCounts.size >= MAX_RATE_LIMIT_ENTRIES) {
+            const oldestIp = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldestIp);
+        }
         ipRequestCounts.set(ip, entry);
     } else {
         // ⚡ Bolt Optimization: Mutate existing entry count in-place and avoid
