@@ -63,4 +63,36 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Name and value are required');
     });
+
+    it('should reject invalid token name or value in POST /api/tokens with HTTP 400', async () => {
+        // Test non-string name
+        let res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name: 12345, value: 100 })
+        });
+        expect(res.status).to.equal(400);
+        let data = await res.json();
+        expect(data).to.have.property('error', 'Invalid token name or value');
+
+        // Test name longer than 100 chars
+        res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name: 'a'.repeat(101), value: 100 })
+        });
+        expect(res.status).to.equal(400);
+        data = await res.json();
+        expect(data).to.have.property('error', 'Invalid token name or value');
+
+        // Test non-numeric value
+        res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name: 'ValidToken', value: 'not-a-number' })
+        });
+        expect(res.status).to.equal(400);
+        data = await res.json();
+        expect(data).to.have.property('error', 'Invalid token name or value');
+    });
 });
