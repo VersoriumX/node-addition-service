@@ -63,4 +63,32 @@ describe('Token Manager', () => {
         expect(() => deleteToken(longName)).to.throw('Invalid token name');
         expect(() => deleteToken(12345)).to.throw('Invalid token name');
     });
+
+    it('should lazily re-generate JSON, ETag, and array cache after token mutations', () => {
+        const { getAllTokensJSON, getAllTokensETag, getAllTokensArray } = require('../src/tokenmanager');
+
+        addToken('LazyCacheToken', 500);
+        const json1 = getAllTokensJSON();
+        const etag1 = getAllTokensETag();
+        const arr1 = getAllTokensArray();
+
+        expect(json1).to.include('LazyCacheToken');
+        expect(etag1).to.be.a('string').and.not.be.empty;
+        expect(arr1).to.be.an('array');
+
+        updateToken('LazyCacheToken', 600);
+        const json2 = getAllTokensJSON();
+        const etag2 = getAllTokensETag();
+        const arr2 = getAllTokensArray();
+
+        expect(json2).to.include('"value":600');
+        expect(etag2).to.not.equal(etag1);
+
+        deleteToken('LazyCacheToken');
+        const json3 = getAllTokensJSON();
+        const etag3 = getAllTokensETag();
+
+        expect(json3).to.not.include('LazyCacheToken');
+        expect(etag3).to.not.equal(etag2);
+    });
 });
