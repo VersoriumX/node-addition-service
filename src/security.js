@@ -32,6 +32,10 @@ function rateLimiter(req, res, next) {
 
     let entry = ipRequestCounts.get(ip);
     if (!entry || entry.resetTime <= now) {
+        if (!ipRequestCounts.has(ip) && ipRequestCounts.size >= 5000) {
+            const oldest = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldest);
+        }
         entry = {
             count: 1,
             resetTime: now + windowMs
