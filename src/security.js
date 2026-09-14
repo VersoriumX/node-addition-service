@@ -36,6 +36,11 @@ function rateLimiter(req, res, next) {
             count: 1,
             resetTime: now + windowMs
         };
+        // 🛡️ Sentinel Security Enhancement: Cap Map size at 5000 with FIFO eviction to prevent memory DoS
+        if (!ipRequestCounts.has(ip) && ipRequestCounts.size >= 5000) {
+            const oldestIp = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldestIp);
+        }
         ipRequestCounts.set(ip, entry);
     } else {
         // ⚡ Bolt Optimization: Mutate existing entry count in-place and avoid
