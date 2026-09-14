@@ -15,8 +15,24 @@ const LEET_MAP = {
 };
 const LEET_REGEX = /[easo]/gi;
 
-function optimizedLeet(baseString) {
+function regexLeet(baseString) {
     return baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+}
+
+function fastLoopLeet(baseString) {
+    let leet = '';
+    const len = baseString.length;
+    for (let i = 0; i < len; i++) {
+        const ch = baseString[i];
+        switch (ch) {
+            case 'e': case 'E': leet += '3'; break;
+            case 'a': case 'A': leet += '4'; break;
+            case 's': case 'S': leet += '5'; break;
+            case 'o': case 'O': leet += '0'; break;
+            default: leet += ch; break;
+        }
+    }
+    return leet;
 }
 
 const testStr = "The quick brown fox jumps over the lazy dog. Esoteric expressions and security standards are super critical!";
@@ -32,13 +48,23 @@ const endOriginal = parseFloat(process.hrtime.bigint()) / 1e6;
 const originalTime = endOriginal - startOriginal;
 console.log(`Original Chained Replace: ${originalTime.toFixed(4)}ms`);
 
-const startOptimized = parseFloat(process.hrtime.bigint()) / 1e6;
+const startRegex = parseFloat(process.hrtime.bigint()) / 1e6;
 for (let i = 0; i < iterations; i++) {
-    optimizedLeet(testStr);
+    regexLeet(testStr);
 }
-const endOptimized = parseFloat(process.hrtime.bigint()) / 1e6;
-const optimizedTime = endOptimized - startOptimized;
-console.log(`Optimized Single Regex Pass: ${optimizedTime.toFixed(4)}ms`);
+const endRegex = parseFloat(process.hrtime.bigint()) / 1e6;
+const regexTime = endRegex - startRegex;
+console.log(`Single Regex Pass: ${regexTime.toFixed(4)}ms`);
 
-const speedup = ((originalTime - optimizedTime) / originalTime) * 100;
-console.log(`Estimated Performance Gain: ${speedup.toFixed(2)}% faster\n`);
+const startLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    fastLoopLeet(testStr);
+}
+const endLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+const loopTime = endLoop - startLoop;
+console.log(`Fast Loop / Switch: ${loopTime.toFixed(4)}ms`);
+
+const speedupVsChained = ((originalTime - loopTime) / originalTime) * 100;
+const speedupVsRegex = ((regexTime - loopTime) / regexTime) * 100;
+console.log(`Speedup vs Chained Replace: ${speedupVsChained.toFixed(2)}% faster`);
+console.log(`Speedup vs Single Regex Pass: ${speedupVsRegex.toFixed(2)}% faster\n`);
