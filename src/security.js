@@ -36,6 +36,11 @@ function rateLimiter(req, res, next) {
             count: 1,
             resetTime: now + windowMs
         };
+        // Enforce maximum capacity (5000) to prevent unbounded memory growth DoS
+        if (ipRequestCounts.size >= 5000) {
+            const oldest = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldest);
+        }
         ipRequestCounts.set(ip, entry);
     } else {
         // ⚡ Bolt Optimization: Mutate existing entry count in-place and avoid
