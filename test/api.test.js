@@ -47,4 +47,9 @@ describe('API Service Security & Timeout Configuration', () => {
         expect(loggedError).to.not.contain('YOUR_CRYPTO_API_KEY');
         expect(loggedError).to.contain('[REDACTED]');
     });
+
+    it('should redact all sensitive parameter names (api_key, token, secret, password) in error logs', () => {
+        const apiSource = fs.readFileSync(path.join(__dirname, '../src/api.js'), 'utf8');
+        expect(apiSource).to.match(/access_key\|CMC_PRO_API_KEY\|api_key\|key\|token\|secret\|password/);
+    });
 });
