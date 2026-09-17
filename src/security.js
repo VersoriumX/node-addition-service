@@ -37,6 +37,11 @@ function rateLimiter(req, res, next) {
             resetTime: now + windowMs
         };
         ipRequestCounts.set(ip, entry);
+        // 🛡️ Sentinel: Enforce maximum capacity limit (5000 entries) with FIFO eviction to prevent memory-exhaustion DoS
+        if (ipRequestCounts.size > 5000) {
+            const oldestKey = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldestKey);
+        }
     } else {
         // ⚡ Bolt Optimization: Mutate existing entry count in-place and avoid
         // redundant ipRequestCounts.set() calls on active cache hits.
