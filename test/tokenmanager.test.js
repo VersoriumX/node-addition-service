@@ -1,21 +1,28 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('../src/tokenmanager');
+const { addToken, getTokenValue, updateToken, deleteToken, getAllTokensJSON, getAllTokensETag, getAllTokensArray } = require('../src/tokenmanager');
 
 describe('Token Manager', () => {
-    it('should add a token', () => {
+    it('should add a token and lazily update caches', () => {
         addToken('TestToken', 100);
         expect(getTokenValue('TestToken')).to.equal(100);
+        expect(getAllTokensJSON()).to.include('TestToken');
+        expect(getAllTokensETag()).to.be.a('string');
+        expect(getAllTokensArray().some(t => t.name === 'TestToken')).to.be.true;
     });
 
-    it('should update a token', () => {
+    it('should update a token and lazily update caches', () => {
         updateToken('TestToken', 200);
         expect(getTokenValue('TestToken')).to.equal(200);
+        expect(getAllTokensJSON()).to.include('"value":200');
+        expect(getAllTokensETag()).to.be.a('string');
     });
 
-    it('should delete a token', () => {
+    it('should delete a token and lazily update caches', () => {
         deleteToken('TestToken');
         expect(getTokenValue('TestToken')).to.be.null;
+        expect(getAllTokensJSON()).to.not.include('TestToken');
+        expect(getAllTokensETag()).to.be.a('string');
     });
 
     it('should reject a token name longer than 100 characters', () => {
