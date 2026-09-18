@@ -1,8 +1,33 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('../src/tokenmanager');
+const { addToken, getTokenValue, updateToken, deleteToken, getAllTokensJSON, getAllTokensETag, getAllTokensArray } = require('../src/tokenmanager');
 
 describe('Token Manager', () => {
+    it('should lazily re-generate JSON, ETag, and array caches on token mutations', () => {
+        addToken('CacheTest', 500);
+        const json = getAllTokensJSON();
+        const etag = getAllTokensETag();
+        const arr = getAllTokensArray();
+
+        expect(json).to.include('"name":"CacheTest"');
+        expect(json).to.include('"value":500');
+        expect(etag).to.be.a('string');
+        expect(arr.some(item => item.name === 'CacheTest' && item.value === 500)).to.be.true;
+
+        updateToken('CacheTest', 999);
+        const updatedJson = getAllTokensJSON();
+        const updatedEtag = getAllTokensETag();
+        const updatedArr = getAllTokensArray();
+
+        expect(updatedJson).to.include('"value":999');
+        expect(updatedEtag).to.not.equal(etag);
+        expect(updatedArr.some(item => item.name === 'CacheTest' && item.value === 999)).to.be.true;
+
+        deleteToken('CacheTest');
+        const deletedJson = getAllTokensJSON();
+        expect(deletedJson).to.not.include('"name":"CacheTest"');
+    });
+
     it('should add a token', () => {
         addToken('TestToken', 100);
         expect(getTokenValue('TestToken')).to.equal(100);
