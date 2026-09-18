@@ -1,11 +1,7 @@
 // benchmark_fuzzer_compare.js
-// Compares original chained replace performance with the single regex map lookup
+// Compares single regex map lookup with the single-pass switch-case character mapping loop
 
 const { generateVariations } = require('../../src/fuzzer');
-
-function originalLeet(baseString) {
-    return baseString.replace(/e/gi, '3').replace(/a/gi, '4').replace(/s/gi, '5').replace(/o/gi, '0');
-}
 
 const LEET_MAP = {
     'e': '3', 'E': '3',
@@ -15,8 +11,23 @@ const LEET_MAP = {
 };
 const LEET_REGEX = /[easo]/gi;
 
-function optimizedLeet(baseString) {
+function regexLeet(baseString) {
     return baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+}
+
+function loopLeet(str) {
+    let res = '';
+    for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        switch (ch) {
+            case 'e': case 'E': res += '3'; break;
+            case 'a': case 'A': res += '4'; break;
+            case 's': case 'S': res += '5'; break;
+            case 'o': case 'O': res += '0'; break;
+            default: res += ch; break;
+        }
+    }
+    return res;
 }
 
 const testStr = "The quick brown fox jumps over the lazy dog. Esoteric expressions and security standards are super critical!";
@@ -24,21 +35,21 @@ const iterations = 500000;
 
 console.log("--- Benchmarking Leet Conversion (500,000 iterations) ---");
 
-const startOriginal = parseFloat(process.hrtime.bigint()) / 1e6;
+const startRegex = parseFloat(process.hrtime.bigint()) / 1e6;
 for (let i = 0; i < iterations; i++) {
-    originalLeet(testStr);
+    regexLeet(testStr);
 }
-const endOriginal = parseFloat(process.hrtime.bigint()) / 1e6;
-const originalTime = endOriginal - startOriginal;
-console.log(`Original Chained Replace: ${originalTime.toFixed(4)}ms`);
+const endRegex = parseFloat(process.hrtime.bigint()) / 1e6;
+const regexTime = endRegex - startRegex;
+console.log(`RegExp Replace Pass:        ${regexTime.toFixed(4)}ms`);
 
-const startOptimized = parseFloat(process.hrtime.bigint()) / 1e6;
+const startLoop = parseFloat(process.hrtime.bigint()) / 1e6;
 for (let i = 0; i < iterations; i++) {
-    optimizedLeet(testStr);
+    loopLeet(testStr);
 }
-const endOptimized = parseFloat(process.hrtime.bigint()) / 1e6;
-const optimizedTime = endOptimized - startOptimized;
-console.log(`Optimized Single Regex Pass: ${optimizedTime.toFixed(4)}ms`);
+const endLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+const loopTime = endLoop - startLoop;
+console.log(`Single-Pass Switch Loop:    ${loopTime.toFixed(4)}ms`);
 
-const speedup = ((originalTime - optimizedTime) / originalTime) * 100;
+const speedup = ((regexTime - loopTime) / regexTime) * 100;
 console.log(`Estimated Performance Gain: ${speedup.toFixed(2)}% faster\n`);
