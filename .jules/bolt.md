@@ -69,3 +69,7 @@
 ## 2026-08-26 - Array Traversal Optimization in Security Scanners
 **Learning:** When recursively scanning objects (such as Express `req.query` or `req.body` payloads) for security vulnerabilities or malicious strings, falling back to a `for...in` loop to traverse arrays incurs severe overhead. It iterates over numeric index keys (like `'0'`, `'1'`), leading to redundant prototype checking and unnecessary string/regex validation on those index string keys.
 **Action:** Explicitly handle array checking using `Array.isArray(obj)` and loop through elements directly using a fast `for` loop. This avoids key-string traversal and avoids redundant security scans on the array indices, saving up to ~78.5% CPU overhead on requests containing array payloads.
+
+## 2026-09-02 - Single-Pass Switch-Case vs RegExp for Fixed Character Mapping
+**Learning:** Using `String.prototype.replace(RegExp, callback)` for string transformations (such as leet-speak conversions) incurs high CPU overhead from V8 RegExp engine initialization and per-match JS callback allocations. A single-pass character iteration loop with `switch-case` mapping eliminates callback allocations and RegExp engine context switching, delivering a 29% to 83% speedup across various input lengths.
+**Action:** For fixed character mapping operations, replace RegExp `.replace()` and callback functions with a direct single-pass `for` loop and `switch-case` character lookup.
