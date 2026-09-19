@@ -41,6 +41,17 @@ function updateCache() {
 // Initial cache population
 updateCache();
 
+/**
+ * ⚡ Bolt Optimization: Lazy Cache Invalidation
+ * Resets cached JSON, ETag, and array representations to null on mutations.
+ * Defers O(N) stringification and MD5 hashing until explicitly requested by getters.
+ */
+function invalidateCache() {
+    tokensJSONCache = null;
+    tokensETagCache = null;
+    tokensArrayCache = null;
+}
+
 const SENSITIVE_KEYS = ['__proto__', 'constructor', 'prototype'];
 const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
 
@@ -57,7 +68,7 @@ function addToken(name, value) {
         throw new Error('Invalid token name: sensitive key');
     }
     tokens[name] = value;
-    updateCache();
+    invalidateCache();
     return saveTokens(tokens);
 }
 
@@ -74,7 +85,7 @@ function getAllTokens() {
 /**
  * ⚡ Bolt Optimization:
  * Returns the memory-cached array of tokens.
- * Now implements lazy loading and avoids Object.freeze for internal speed.
+ * Lazily regenerates tokensArrayCache if null.
  */
 function getAllTokensArray() {
     if (tokensArrayCache === null) {
@@ -92,6 +103,7 @@ function getAllTokensArray() {
 /**
  * ⚡ Bolt Optimization:
  * Returns the pre-serialized JSON string of the tokens array.
+ * Lazily invokes updateCache() if tokensJSONCache is null.
  */
 function getAllTokensJSON() {
     if (tokensJSONCache === null) updateCache();
@@ -101,6 +113,7 @@ function getAllTokensJSON() {
 /**
  * ⚡ Bolt Optimization:
  * Returns the pre-calculated ETag for the tokens JSON.
+ * Lazily invokes updateCache() if tokensETagCache is null.
  */
 function getAllTokensETag() {
     if (tokensETagCache === null) updateCache();
@@ -123,7 +136,7 @@ function updateToken(name, value) {
             throw new Error('Invalid token value');
         }
         tokens[name] = value;
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
@@ -143,7 +156,7 @@ function deleteToken(name) {
     }
     if (tokens[name] !== undefined) {
         delete tokens[name];
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
