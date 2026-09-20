@@ -19,9 +19,19 @@ let tokensETagCache = null;
 
 /**
  * ⚡ Bolt Optimization:
- * Optimized updateCache to avoid building the frozen tokensArrayCache by default.
- * Uses a manual loop instead of Object.keys().map() for better performance.
- * tokensArrayCache is now lazily populated only when requested.
+ * Invalidates the token caches when mutations occur.
+ * Deferring JSON stringification and ETag calculation until requested avoids
+ * unnecessary O(n) serialization overhead during token mutations.
+ */
+function invalidateCache() {
+    tokensJSONCache = null;
+    tokensETagCache = null;
+    tokensArrayCache = null;
+}
+
+/**
+ * ⚡ Bolt Optimization:
+ * Re-computes cached JSON and ETag representations on demand.
  */
 function updateCache() {
     const keys = Object.keys(tokens);
@@ -34,7 +44,6 @@ function updateCache() {
     // ⚡ Bolt Optimization: Pre-calculate ETag to avoid hashing on every request.
     // We use MD5 as it is fast and sufficient for ETag purposes.
     tokensETagCache = `"${crypto.createHash('md5').update(tokensJSONCache).digest('hex')}"`;
-    // Clear array cache so it can be re-populated lazily if needed
     tokensArrayCache = null;
 }
 
@@ -49,7 +58,6 @@ function addToken(name, value) {
         throw new Error('Invalid token name or value');
     }
     // 🛡️ Sentinel: Validate that token name contains only a safe set of characters and protect against injections
-    // ⚡ Bolt Optimization: Replace double-redundant regex scans with a single evaluation of SAFE_NAME_REGEX.
     if (!SAFE_NAME_REGEX.test(name)) {
         throw new Error('Invalid token name: contains invalid characters / Invalid token name or value');
     }
@@ -57,7 +65,8 @@ function addToken(name, value) {
         throw new Error('Invalid token name: sensitive key');
     }
     tokens[name] = value;
-    updateCache();
+    // ⚡ Bolt Optimization: Use lazy cache invalidation on mutations instead of eager re-computation
+    invalidateCache();
     return saveTokens(tokens);
 }
 
@@ -92,18 +101,24 @@ function getAllTokensArray() {
 /**
  * ⚡ Bolt Optimization:
  * Returns the pre-serialized JSON string of the tokens array.
+ * Lazily re-computes the cache on demand if invalidated by a prior mutation.
  */
 function getAllTokensJSON() {
-    if (tokensJSONCache === null) updateCache();
+    if (tokensJSONCache === null || tokensETagCache === null) {
+        updateCache();
+    }
     return tokensJSONCache;
 }
 
 /**
  * ⚡ Bolt Optimization:
  * Returns the pre-calculated ETag for the tokens JSON.
+ * Lazily re-computes the cache on demand if invalidated by a prior mutation.
  */
 function getAllTokensETag() {
-    if (tokensETagCache === null) updateCache();
+    if (tokensJSONCache === null || tokensETagCache === null) {
+        updateCache();
+    }
     return tokensETagCache;
 }
 
@@ -123,7 +138,8 @@ function updateToken(name, value) {
             throw new Error('Invalid token value');
         }
         tokens[name] = value;
-        updateCache();
+        // ⚡ Bolt Optimization: Use lazy cache invalidation on mutations instead of eager re-computation
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
@@ -143,7 +159,8 @@ function deleteToken(name) {
     }
     if (tokens[name] !== undefined) {
         delete tokens[name];
-        updateCache();
+        // ⚡ Bolt Optimization: Use lazy cache invalidation on mutations instead of eager re-computation
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
