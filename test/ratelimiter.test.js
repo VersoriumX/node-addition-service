@@ -137,4 +137,32 @@ describe('In-Memory Rate Limiter Middleware', () => {
         // All 2005 expired entries should be removed because they resetTime <= now.
         expect(ipRequestCounts.size).to.be.lessThan(10);
     });
+
+    it('should cap ipRequestCounts capacity at 5000 and evict oldest entry via FIFO', () => {
+        const now = Date.now();
+        // Fill up map with 5000 active entries
+        for (let i = 0; i < 5000; i++) {
+            ipRequestCounts.set(`10.0.0.${i}`, {
+                count: 1,
+                resetTime: now + 60000
+            });
+        }
+
+        expect(ipRequestCounts.size).to.equal(5000);
+        expect(ipRequestCounts.has('10.0.0.0')).to.be.true;
+
+        // Make request from a 5001st distinct IP
+        const req = { ip: '192.168.1.1' };
+        const res = { setHeader: () => {} };
+        const next = () => {};
+
+        rateLimiter(req, res, next);
+
+        // Map size should remain capped at 5000
+        expect(ipRequestCounts.size).to.equal(5000);
+        // Oldest entry (10.0.0.0) should have been evicted
+        expect(ipRequestCounts.has('10.0.0.0')).to.be.false;
+        // New entry should be present
+        expect(ipRequestCounts.has('192.168.1.1')).to.be.true;
+    });
 });

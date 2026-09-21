@@ -5,6 +5,7 @@
 
 const quarantinedIPs = new Set();
 const ipRequestCounts = new Map();
+const MAX_RATE_LIMIT_ENTRIES = 5000;
 let lastPruneTime = 0;
 
 /**
@@ -32,6 +33,10 @@ function rateLimiter(req, res, next) {
 
     let entry = ipRequestCounts.get(ip);
     if (!entry || entry.resetTime <= now) {
+        if (!entry && ipRequestCounts.size >= MAX_RATE_LIMIT_ENTRIES) {
+            const oldestIp = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldestIp);
+        }
         entry = {
             count: 1,
             resetTime: now + windowMs
