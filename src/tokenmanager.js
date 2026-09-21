@@ -19,10 +19,17 @@ let tokensETagCache = null;
 
 /**
  * ⚡ Bolt Optimization:
- * Optimized updateCache to avoid building the frozen tokensArrayCache by default.
- * Uses a manual loop instead of Object.keys().map() for better performance.
- * tokensArrayCache is now lazily populated only when requested.
+ * Lazy cache invalidation on token mutations.
+ * Instead of immediately re-serializing and re-hashing the JSON string and ETag on every mutation,
+ * invalidateCache sets the cache pointers to null. Cache generation is deferred until requested
+ * by getAllTokensJSON(), getAllTokensETag(), or getAllTokensArray().
  */
+function invalidateCache() {
+    tokensJSONCache = null;
+    tokensETagCache = null;
+    tokensArrayCache = null;
+}
+
 function updateCache() {
     const keys = Object.keys(tokens);
     const arr = new Array(keys.length);
@@ -34,7 +41,6 @@ function updateCache() {
     // ⚡ Bolt Optimization: Pre-calculate ETag to avoid hashing on every request.
     // We use MD5 as it is fast and sufficient for ETag purposes.
     tokensETagCache = `"${crypto.createHash('md5').update(tokensJSONCache).digest('hex')}"`;
-    // Clear array cache so it can be re-populated lazily if needed
     tokensArrayCache = null;
 }
 
@@ -57,7 +63,7 @@ function addToken(name, value) {
         throw new Error('Invalid token name: sensitive key');
     }
     tokens[name] = value;
-    updateCache();
+    invalidateCache();
     return saveTokens(tokens);
 }
 
@@ -123,7 +129,7 @@ function updateToken(name, value) {
             throw new Error('Invalid token value');
         }
         tokens[name] = value;
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
@@ -143,7 +149,7 @@ function deleteToken(name) {
     }
     if (tokens[name] !== undefined) {
         delete tokens[name];
-        updateCache();
+        invalidateCache();
         return saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
