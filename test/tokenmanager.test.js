@@ -1,11 +1,17 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('../src/tokenmanager');
+const { addToken, getTokenValue, updateToken, deleteToken, getAllTokensJSON, getAllTokensETag, getAllTokensArray } = require('../src/tokenmanager');
 
 describe('Token Manager', () => {
-    it('should add a token', () => {
+    it('should add a token and lazily regenerate cache getters on read', () => {
         addToken('TestToken', 100);
         expect(getTokenValue('TestToken')).to.equal(100);
+        const json = getAllTokensJSON();
+        const etag = getAllTokensETag();
+        const arr = getAllTokensArray();
+        expect(json).to.include('TestToken');
+        expect(etag).to.be.a('string');
+        expect(arr).to.be.an('array');
     });
 
     it('should update a token', () => {
