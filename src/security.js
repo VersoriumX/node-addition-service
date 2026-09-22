@@ -32,6 +32,11 @@ function rateLimiter(req, res, next) {
 
     let entry = ipRequestCounts.get(ip);
     if (!entry || entry.resetTime <= now) {
+        // Enforce maximum capacity limit to prevent memory-exhaustion (DoS)
+        if (!entry && ipRequestCounts.size >= 5000) {
+            const oldestKey = ipRequestCounts.keys().next().value;
+            ipRequestCounts.delete(oldestKey);
+        }
         entry = {
             count: 1,
             resetTime: now + windowMs
