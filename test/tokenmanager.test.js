@@ -18,6 +18,25 @@ describe('Token Manager', () => {
         expect(getTokenValue('TestToken')).to.be.null;
     });
 
+    it('should lazily recompute JSON and ETag caches after token mutations', () => {
+        const { getAllTokensJSON, getAllTokensETag } = require('../src/tokenmanager');
+        addToken('CacheLazyTest', 500);
+        const json1 = getAllTokensJSON();
+        const etag1 = getAllTokensETag();
+        expect(json1).to.include('CacheLazyTest');
+        expect(etag1).to.be.a('string');
+
+        updateToken('CacheLazyTest', 999);
+        const json2 = getAllTokensJSON();
+        const etag2 = getAllTokensETag();
+        expect(json2).to.include('999');
+        expect(etag2).to.not.equal(etag1);
+
+        deleteToken('CacheLazyTest');
+        const json3 = getAllTokensJSON();
+        expect(json3).to.not.include('CacheLazyTest');
+    });
+
     it('should reject a token name longer than 100 characters', () => {
         const longName = 'a'.repeat(101);
         expect(() => addToken(longName, 100)).to.throw('Invalid token name or value');
