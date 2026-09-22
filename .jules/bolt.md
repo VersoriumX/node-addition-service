@@ -69,3 +69,7 @@
 ## 2026-08-26 - Array Traversal Optimization in Security Scanners
 **Learning:** When recursively scanning objects (such as Express `req.query` or `req.body` payloads) for security vulnerabilities or malicious strings, falling back to a `for...in` loop to traverse arrays incurs severe overhead. It iterates over numeric index keys (like `'0'`, `'1'`), leading to redundant prototype checking and unnecessary string/regex validation on those index string keys.
 **Action:** Explicitly handle array checking using `Array.isArray(obj)` and loop through elements directly using a fast `for` loop. This avoids key-string traversal and avoids redundant security scans on the array indices, saving up to ~78.5% CPU overhead on requests containing array payloads.
+
+## 2026-09-02 - Lazy Cache Invalidation for Mutation-Heavy Data Store
+**Learning:** In applications where write operations (mutations) occur in batches or high bursts, eagerly stringifying JSON representations and hashing ETags on every single mutation wastes significant CPU time. Invalidating cache references (`null`) during mutations and lazily regenerating them upon the next read/get request defers expensive O(N) operations until necessary.
+**Action:** Use an `invalidateCache()` helper on state mutations to reset cached string/ETag properties to `null`, and perform on-demand `updateCache()` inside getter methods (`getAllTokensJSON()`, `getAllTokensETag()`).
