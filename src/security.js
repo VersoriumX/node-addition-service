@@ -154,6 +154,7 @@ function electricFence(req, res, next) {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Referrer-Policy', 'no-referrer');
         res.setHeader('X-XSS-Protection', '1; mode=block');
+        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     }
 
     const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';

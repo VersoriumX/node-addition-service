@@ -24,6 +24,7 @@ describe('Electric Fence Security Middleware', () => {
             expect(headers['X-Content-Type-Options']).to.equal('nosniff');
             expect(headers['Referrer-Policy']).to.equal('no-referrer');
             expect(headers['X-XSS-Protection']).to.equal('1; mode=block');
+            expect(headers['Permissions-Policy']).to.equal('camera=(), microphone=(), geolocation=()');
             done();
         };
         electricFence(req, res, next);
