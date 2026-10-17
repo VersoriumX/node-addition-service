@@ -66,7 +66,10 @@ function addToken(name, value) {
 }
 
 function getTokenValue(name) {
-    if (!name || typeof name !== 'string') return null;
+    // 🛡️ Sentinel: Enforce strict input validation on token name lookups
+    if (typeof name !== 'string' || name.length > 100 || !SAFE_NAME_REGEX.test(name) || SENSITIVE_KEYS.includes(name)) {
+        return null;
+    }
     // Null-prototype object prevents access to inherited properties
     return tokens[name] !== undefined ? tokens[name] : null;
 }
