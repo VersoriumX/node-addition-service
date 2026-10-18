@@ -53,3 +53,8 @@
 **Vulnerability:** The IP-based quarantine list (`quarantinedIPs` Set) was unbounded, allowing attackers to cause a memory-exhaustion Denial of Service (DoS) by sending suspicious payloads from many unique IP addresses. Additionally, falsy IP addresses (e.g., `undefined` or `'unknown'`) could be quarantined, which accidentally locked out all legitimate clients with unresolved IPs.
 **Learning:** Security state (like IP blocks) must never have unbounded memory footprints. Furthermore, fallback identifiers like `undefined` or `'unknown'` must be excluded from blocklists to prevent a single malicious or malformed request from denying access to everyone sharing that fallback.
 **Prevention:** Enforce a strict maximum capacity (e.g., 1000 entries) on the quarantine Set with a FIFO eviction strategy, and explicitly validate that IP addresses are known and resolved before checking or quarantining them.
+
+## 2026-08-31 - Internal Error Message Leakage in API Mutations
+**Vulnerability:** Catch blocks in `POST /api/tokens` returned raw `error.message` to clients for any thrown exception, leaking internal filesystem structures or node error details on unexpected storage/runtime failures.
+**Learning:** Returning `error.message` directly in route catch blocks can inadvertently expose internal server details if client validation errors aren't strictly differentiated from unexpected system/runtime exceptions.
+**Prevention:** Whitelist known validation error message patterns for HTTP 400 responses, and return generic sanitized messages (HTTP 500) for all unhandled system exceptions.
