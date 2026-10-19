@@ -1,12 +1,12 @@
 const crypto = require('crypto');
-const { loadTokens, saveTokens } = require('./database');
+const database = require('./database');
 
 /**
  * 🛡️ Sentinel Security Enhancement:
  * Use a null-prototype object to prevent prototype pollution and
  * unauthorized access to inherited properties (e.g., 'constructor').
  */
-let tokens = Object.assign(Object.create(null), loadTokens());
+let tokens = Object.assign(Object.create(null), database.loadTokens());
 
 /**
  * ⚡ Bolt Optimization:
@@ -62,7 +62,7 @@ function addToken(name, value) {
     }
     tokens[name] = value;
     invalidateCache();
-    return saveTokens(tokens);
+    return database.saveTokens(tokens);
 }
 
 function getTokenValue(name) {
@@ -128,7 +128,7 @@ function updateToken(name, value) {
         }
         tokens[name] = value;
         invalidateCache();
-        return saveTokens(tokens);
+        return database.saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
     }
@@ -148,7 +148,7 @@ function deleteToken(name) {
     if (tokens[name] !== undefined) {
         delete tokens[name];
         invalidateCache();
-        return saveTokens(tokens);
+        return database.saveTokens(tokens);
     } else {
         throw new Error('Token does not exist');
     }
