@@ -77,3 +77,7 @@
 ## 2026-09-09 - Direct Array Construction vs Set Allocation for Micro Collections
 **Learning:** For small, fixed-size collections (such as generating variations of at most 7 strings), instantiating a `Set` object, calling `.add()` repeatedly, and converting back to an `Array` via `Array.from()` incurs significant object allocation, hash table setup, and iterator overhead.
 **Action:** Replace `Set` instantiation and `Array.from()` with direct array construction and linear inclusion checks (`!variations.includes(...)`) for micro collections. This eliminates iterator and object allocations, yielding ~33% faster execution.
+
+## 2026-09-16 - Single Property Lookups and Direct Equality Checks in Store Operations
+**Learning:** Performing redundant property lookups on object maps (e.g., `tokens[name] !== undefined ? tokens[name] : null`) forces V8 to execute two hashtable resolution steps per lookup. Similarly, using array `.includes()` for small lists of key names incurs array traversal and method dispatch overhead.
+**Action:** Store the result of object lookups in a local variable before checking `!== undefined`. Use direct string equality checks (`name === 'a' || name === 'b'`) instead of `[...].includes()` for small, fixed sets of sensitive keys.
