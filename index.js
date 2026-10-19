@@ -167,7 +167,10 @@ app.post('/api/tokens', async (req, res) => {
         res.status(201).json({ message: 'Token added successfully' });
     } catch (error) {
         console.error('Error adding token:', error);
-        res.status(400).json({ error: error.message });
+        if (error && typeof error.message === 'string' && error.message.startsWith('Invalid token')) {
+            return res.status(400).json({ error: error.message });
+        }
+        res.status(500).json({ error: 'Failed to process token operation' });
     }
 });
 
