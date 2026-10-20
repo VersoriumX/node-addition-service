@@ -13,12 +13,15 @@ const LEET_MAP = {
     'o': '0', 'O': '0'
 };
 const LEET_REGEX = /[easo]/gi;
+const LEET_TEST_REGEX = /[easo]/i;
+const leetReplacer = m => LEET_MAP[m];
 
 /**
  * ⚡ Bolt Optimization: Fast string reversal without intermediate array allocation.
  * Avoiding .split('').reverse().join('') eliminates temporary array creations and reduces GC pressure.
  */
 function reverseString(str) {
+    if (str.length <= 1) return str;
     let rev = '';
     for (let i = str.length - 1; i >= 0; i--) {
         rev += str[i];
@@ -40,8 +43,9 @@ function generateVariations(baseString) {
     const v4 = baseString + "123";
     const v5 = baseString + "!";
     const v6 = reverseString(baseString);
-    // ⚡ Bolt Optimization: Using a single pass replace operation with map lookup.
-    const v7 = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+    // ⚡ Bolt Optimization: Fast path check with LEET_TEST_REGEX to bypass .replace()
+    // and hoisted leetReplacer function to eliminate closure allocations per invocation.
+    const v7 = LEET_TEST_REGEX.test(baseString) ? baseString.replace(LEET_REGEX, leetReplacer) : baseString;
 
     // ⚡ Bolt Optimization: Construct result array directly instead of allocating
     // a Set instance, making 7 .add() calls, and calling Array.from().
