@@ -66,7 +66,9 @@ function addToken(name, value) {
 }
 
 function getTokenValue(name) {
-    if (!name || typeof name !== 'string') return null;
+    if (!name || typeof name !== 'string' || name.length > 100) return null;
+    // 🛡️ Sentinel: Enforce safe character validation and sensitive key checks on lookups
+    if (SENSITIVE_KEYS.includes(name) || !SAFE_NAME_REGEX.test(name)) return null;
     // Null-prototype object prevents access to inherited properties
     return tokens[name] !== undefined ? tokens[name] : null;
 }
