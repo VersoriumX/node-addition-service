@@ -67,8 +67,10 @@ function addToken(name, value) {
 
 function getTokenValue(name) {
     if (!name || typeof name !== 'string') return null;
-    // Null-prototype object prevents access to inherited properties
-    return tokens[name] !== undefined ? tokens[name] : null;
+    // ⚡ Bolt Optimization: Single property lookup to avoid evaluating tokens[name] twice.
+    // Null-prototype object prevents access to inherited properties.
+    const val = tokens[name];
+    return val !== undefined ? val : null;
 }
 
 function getAllTokens() {
