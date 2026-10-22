@@ -163,11 +163,17 @@ app.post('/api/tokens', async (req, res) => {
         if (!name || value === undefined) {
             return res.status(400).json({ error: 'Name and value are required' });
         }
+        if (typeof name !== 'string' || name.length > 100 || typeof value !== 'number' || !Number.isFinite(value)) {
+            return res.status(400).json({ error: 'Invalid token name or value' });
+        }
         await addToken(name, value);
         res.status(201).json({ message: 'Token added successfully' });
     } catch (error) {
         console.error('Error adding token:', error);
-        res.status(400).json({ error: error.message });
+        const isValidationError = error && typeof error.message === 'string' && error.message.startsWith('Invalid token');
+        const status = isValidationError ? 400 : 500;
+        const message = isValidationError ? error.message : 'Failed to process token operation';
+        res.status(status).json({ error: message });
     }
 });
 
