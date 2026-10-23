@@ -277,7 +277,11 @@ app.get('/api/fuzz', (req, res) => {
     if (input.length > 250) {
         return res.status(400).json({ error: 'Input must be 250 characters or less' });
     }
-    res.json({ variations: generateVariations(input) });
+    try {
+        res.json({ variations: generateVariations(input) });
+    } catch (err) {
+        res.status(400).json({ error: 'Failed to generate variations' });
+    }
 });
 
 // 🛡️ Sentinel Security Enhancement: Global error handling middleware.
