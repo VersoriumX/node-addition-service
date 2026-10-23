@@ -63,4 +63,13 @@ describe('Token Manager', () => {
         expect(() => deleteToken(longName)).to.throw('Invalid token name');
         expect(() => deleteToken(12345)).to.throw('Invalid token name');
     });
+
+    it('should reject sensitive key names in addToken, updateToken, and deleteToken', () => {
+        const sensitiveKeys = ['__proto__', 'constructor', 'prototype'];
+        for (const key of sensitiveKeys) {
+            expect(() => addToken(key, 100)).to.throw('Invalid token name: sensitive key');
+            expect(() => updateToken(key, 100)).to.throw('Invalid token name: sensitive key');
+            expect(() => deleteToken(key)).to.throw('Invalid token name: sensitive key');
+        }
+    });
 });
