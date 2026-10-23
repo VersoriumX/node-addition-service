@@ -45,7 +45,9 @@ function updateCache() {
 // Initial cache population
 updateCache();
 
-const SENSITIVE_KEYS = ['__proto__', 'constructor', 'prototype'];
+// ⚡ Bolt Optimization: Use a Set for SENSITIVE_KEYS to allow O(1) membership checks (SENSITIVE_KEYS.has)
+// instead of O(N) Array.prototype.includes checks during token operations.
+const SENSITIVE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
 
 function addToken(name, value) {
@@ -57,7 +59,7 @@ function addToken(name, value) {
     if (!SAFE_NAME_REGEX.test(name)) {
         throw new Error('Invalid token name: contains invalid characters / Invalid token name or value');
     }
-    if (SENSITIVE_KEYS.includes(name)) {
+    if (SENSITIVE_KEYS.has(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
     tokens[name] = value;
@@ -67,8 +69,9 @@ function addToken(name, value) {
 
 function getTokenValue(name) {
     if (!name || typeof name !== 'string') return null;
-    // Null-prototype object prevents access to inherited properties
-    return tokens[name] !== undefined ? tokens[name] : null;
+    // ⚡ Bolt Optimization: Store tokens[name] in a local variable to avoid redundant double property lookups
+    const val = tokens[name];
+    return val !== undefined ? val : null;
 }
 
 function getAllTokens() {
@@ -116,7 +119,7 @@ function updateToken(name, value) {
     if (typeof name !== 'string' || name.length > 100) {
         throw new Error('Invalid token name');
     }
-    if (SENSITIVE_KEYS.includes(name)) {
+    if (SENSITIVE_KEYS.has(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
     if (!SAFE_NAME_REGEX.test(name)) {
@@ -139,7 +142,7 @@ function deleteToken(name) {
     if (typeof name !== 'string' || name.length > 100) {
         throw new Error('Invalid token name');
     }
-    if (SENSITIVE_KEYS.includes(name)) {
+    if (SENSITIVE_KEYS.has(name)) {
         throw new Error('Invalid token name: sensitive key');
     }
     if (!SAFE_NAME_REGEX.test(name)) {
