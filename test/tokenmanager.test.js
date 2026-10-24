@@ -63,4 +63,15 @@ describe('Token Manager', () => {
         expect(() => deleteToken(longName)).to.throw('Invalid token name');
         expect(() => deleteToken(12345)).to.throw('Invalid token name');
     });
+
+    it('should safely return null in getTokenValue for non-string, long, sensitive, or invalid names', () => {
+        expect(getTokenValue(null)).to.be.null;
+        expect(getTokenValue(12345)).to.be.null;
+        expect(getTokenValue('a'.repeat(101))).to.be.null;
+        expect(getTokenValue('__proto__')).to.be.null;
+        expect(getTokenValue('constructor')).to.be.null;
+        expect(getTokenValue('prototype')).to.be.null;
+        expect(getTokenValue('<script>alert(1)</script>')).to.be.null;
+        expect(getTokenValue('Token; DROP TABLE')).to.be.null;
+    });
 });
