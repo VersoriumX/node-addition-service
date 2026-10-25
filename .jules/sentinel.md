@@ -53,3 +53,8 @@
 **Vulnerability:** The IP-based quarantine list (`quarantinedIPs` Set) was unbounded, allowing attackers to cause a memory-exhaustion Denial of Service (DoS) by sending suspicious payloads from many unique IP addresses. Additionally, falsy IP addresses (e.g., `undefined` or `'unknown'`) could be quarantined, which accidentally locked out all legitimate clients with unresolved IPs.
 **Learning:** Security state (like IP blocks) must never have unbounded memory footprints. Furthermore, fallback identifiers like `undefined` or `'unknown'` must be excluded from blocklists to prevent a single malicious or malformed request from denying access to everyone sharing that fallback.
 **Prevention:** Enforce a strict maximum capacity (e.g., 1000 entries) on the quarantine Set with a FIFO eviction strategy, and explicitly validate that IP addresses are known and resolved before checking or quarantining them.
+
+## 2026-08-31 - Information Disclosure in Token Endpoint Error Responses
+**Vulnerability:** Unexpected errors (e.g. filesystem errors during token persistence) in `POST /api/tokens` were caught and returned as HTTP 400 with raw `error.message` string, leaking server file paths and internal exception details to clients.
+**Learning:** Returning unhandled exception messages in API responses can expose sensitive environment paths and internal details. Distinguishing user validation errors from internal system failures ensures safe error feedback.
+**Prevention:** Sanitize API error responses by returning validation error messages for user input failures while masking unexpected system errors with generic HTTP 500 responses.

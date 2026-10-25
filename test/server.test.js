@@ -64,4 +64,44 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Name and value are required');
     });
+
+    it('should return HTTP 400 for validation errors in POST /api/tokens', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({ name: '<invalid_token>', value: 100 })
+        });
+
+        expect(res.status).to.equal(400);
+        const data = await res.json();
+        expect(data.error).to.contain('Invalid token name');
+    });
+
+    it('should return HTTP 500 with generic error response for non-validation/system errors in POST /api/tokens', async () => {
+        const database = require('../src/database');
+        const originalSaveTokens = database.saveTokens;
+        database.saveTokens = async () => {
+            throw new Error('EACCES: permission denied, open \'/app/tokens.json\'');
+        };
+
+        try {
+            const res = await fetch(`${baseUrl}/api/tokens`, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({ name: 'ValidTokenForErrorTest', value: 100 })
+            });
+
+            expect(res.status).to.equal(500);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Failed to process token operation');
+            expect(JSON.stringify(data)).to.not.contain('EACCES');
+            expect(JSON.stringify(data)).to.not.contain('tokens.json');
+        } finally {
+            database.saveTokens = originalSaveTokens;
+        }
+    });
 });
