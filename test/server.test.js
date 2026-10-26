@@ -64,4 +64,44 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Name and value are required');
     });
+
+    it('should return HTTP 400 for validation errors starting with Invalid token', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({ name: '<script>alert(1)</script>', value: 100 })
+        });
+
+        expect(res.status).to.equal(400);
+        const data = await res.json();
+        expect(data.error).to.contain('Invalid token');
+    });
+
+    it('should return HTTP 500 without leaking file paths or internal details on unexpected token save errors', async () => {
+        const fs = require('fs');
+        const originalWriteFile = fs.promises.writeFile;
+        fs.promises.writeFile = async () => {
+            throw new Error("ENOENT: no such file or directory, open '/secret/internal/path/tokens.json'");
+        };
+
+        let res;
+        try {
+            res = await fetch(`${baseUrl}/api/tokens`, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({ name: 'ValidName', value: 100 })
+            });
+        } finally {
+            fs.promises.writeFile = originalWriteFile;
+        }
+
+        expect(res.status).to.equal(500);
+        const data = await res.json();
+        expect(data).to.have.property('error', 'Failed to process token operation');
+        expect(JSON.stringify(data)).to.not.contain('/secret/internal/path');
+    });
 });
