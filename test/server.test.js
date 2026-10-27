@@ -64,4 +64,18 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data).to.have.property('error', 'Name and value are required');
     });
+
+    it('should return HTTP 400 for token validation errors starting with "Invalid token"', async () => {
+        const res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({ name: '<script>alert(1)</script>', value: 100 })
+        });
+
+        expect(res.status).to.equal(400);
+        const data = await res.json();
+        expect(data.error).to.contain('Invalid token name');
+    });
 });
