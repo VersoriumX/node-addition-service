@@ -162,4 +162,24 @@ describe('In-Memory Rate Limiter Middleware', () => {
         expect(ipRequestCounts.has('10.1.0.0')).to.be.false; // Oldest evicted
         expect(ipRequestCounts.has('192.168.1.100')).to.be.true; // Newest inserted
     });
+
+    it('should allow requests with unresolved or unknown IP address without tracking or rate limiting', (done) => {
+        const req = { ip: undefined };
+        const res = { setHeader: () => {} };
+        let nextCalled = false;
+
+        const next = () => {
+            nextCalled = true;
+        };
+
+        // Call rateLimiter 150 times with undefined/unknown IP
+        for (let i = 0; i < 150; i++) {
+            rateLimiter(req, res, next);
+        }
+
+        expect(nextCalled).to.be.true;
+        expect(ipRequestCounts.has('unknown')).to.be.false;
+        expect(ipRequestCounts.size).to.equal(0);
+        done();
+    });
 });
