@@ -53,3 +53,8 @@
 **Vulnerability:** The IP-based quarantine list (`quarantinedIPs` Set) was unbounded, allowing attackers to cause a memory-exhaustion Denial of Service (DoS) by sending suspicious payloads from many unique IP addresses. Additionally, falsy IP addresses (e.g., `undefined` or `'unknown'`) could be quarantined, which accidentally locked out all legitimate clients with unresolved IPs.
 **Learning:** Security state (like IP blocks) must never have unbounded memory footprints. Furthermore, fallback identifiers like `undefined` or `'unknown'` must be excluded from blocklists to prevent a single malicious or malformed request from denying access to everyone sharing that fallback.
 **Prevention:** Enforce a strict maximum capacity (e.g., 1000 entries) on the quarantine Set with a FIFO eviction strategy, and explicitly validate that IP addresses are known and resolved before checking or quarantining them.
+
+## 2026-08-31 - Fallback IP Lockout in Rate Limiting Middleware
+**Vulnerability:** Requests with unresolved client IP addresses were mapped to a shared `'unknown'` key in the rate limiter Map. Exceeding the rate limit on this shared key resulted in HTTP 429 lockouts for all subsequent clients with missing or unresolvable IP information.
+**Learning:** Fallback key identifiers (such as `'unknown'` or `undefined`) should never share a common rate-limiting bucket, as traffic spikes or malicious requests from one unresolvable client can deny service to all other unresolvable clients.
+**Prevention:** Explicitly check for fallback identifiers like `'unknown'` in rate limiting middleware and bypass bucket tracking or handle them without shared key aggregation.
