@@ -70,7 +70,9 @@ function addToken(name, value) {
 function getTokenValue(name) {
     if (!name || typeof name !== 'string') return null;
     // Null-prototype object prevents access to inherited properties
-    return tokens[name] !== undefined ? tokens[name] : null;
+    // ⚡ Bolt Optimization: Store lookup in a local variable to eliminate double property access.
+    const val = tokens[name];
+    return val !== undefined ? val : null;
 }
 
 function getAllTokens() {
@@ -124,7 +126,9 @@ function updateToken(name, value) {
     if (!SAFE_NAME_REGEX.test(name)) {
         throw new Error('Invalid token name: contains invalid characters');
     }
-    if (tokens[name] !== undefined) {
+    // ⚡ Bolt Optimization: Single property lookup to check token existence.
+    const val = tokens[name];
+    if (val !== undefined) {
         if (typeof value !== 'number' || !Number.isFinite(value)) {
             throw new Error('Invalid token value');
         }
@@ -147,7 +151,9 @@ function deleteToken(name) {
     if (!SAFE_NAME_REGEX.test(name)) {
         throw new Error('Invalid token name: contains invalid characters');
     }
-    if (tokens[name] !== undefined) {
+    // ⚡ Bolt Optimization: Single property lookup to check token existence.
+    const val = tokens[name];
+    if (val !== undefined) {
         delete tokens[name];
         invalidateCache();
         return saveTokens(tokens);
