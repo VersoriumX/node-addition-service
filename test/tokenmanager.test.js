@@ -63,4 +63,13 @@ describe('Token Manager', () => {
         expect(() => deleteToken(longName)).to.throw('Invalid token name');
         expect(() => deleteToken(12345)).to.throw('Invalid token name');
     });
+
+    it('should sanitize loaded tokens from storage against invalid or sensitive keys', () => {
+        // Verify loaded tokens were sanitized on module initialization
+        expect(getTokenValue('__proto__')).to.be.null;
+        expect(getTokenValue('constructor')).to.be.null;
+        expect(getTokenValue('<script>xss</script>')).to.be.null;
+        expect(getTokenValue('GoldX')).to.equal(1800);
+        expect(getTokenValue('SilverX')).to.equal(25);
+    });
 });
