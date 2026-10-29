@@ -1,12 +1,37 @@
 const crypto = require('crypto');
 const { loadTokens, saveTokens } = require('./database');
 
+// ⚡ Bolt Optimization: Use a Set for SENSITIVE_KEYS to allow O(1) membership lookup
+// via .has() rather than linear O(n) array scanning via .includes().
+const SENSITIVE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
+
 /**
  * 🛡️ Sentinel Security Enhancement:
- * Use a null-prototype object to prevent prototype pollution and
- * unauthorized access to inherited properties (e.g., 'constructor').
+ * Sanitize loaded tokens from storage to prevent persistent prototype pollution,
+ * XSS payload injection, or memory corruption caused by file tampering or corrupted state.
  */
-let tokens = Object.assign(Object.create(null), loadTokens());
+function sanitizeTokens(loaded) {
+    const clean = Object.create(null);
+    if (loaded && typeof loaded === 'object') {
+        for (const key of Object.keys(loaded)) {
+            if (
+                typeof key === 'string' &&
+                key.length <= 100 &&
+                !SENSITIVE_KEYS.has(key) &&
+                SAFE_NAME_REGEX.test(key)
+            ) {
+                const val = loaded[key];
+                if (typeof val === 'number' && Number.isFinite(val)) {
+                    clean[key] = val;
+                }
+            }
+        }
+    }
+    return clean;
+}
+
+let tokens = Object.assign(Object.create(null), sanitizeTokens(loadTokens()));
 
 /**
  * ⚡ Bolt Optimization:
@@ -44,11 +69,6 @@ function updateCache() {
 
 // Initial cache population
 updateCache();
-
-// ⚡ Bolt Optimization: Use a Set for SENSITIVE_KEYS to allow O(1) membership lookup
-// via .has() rather than linear O(n) array scanning via .includes().
-const SENSITIVE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
 
 function addToken(name, value) {
     if (typeof name !== 'string' || name.length > 100 || typeof value !== 'number' || !Number.isFinite(value)) {
