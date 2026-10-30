@@ -1,12 +1,42 @@
 const crypto = require('crypto');
 const { loadTokens, saveTokens } = require('./database');
 
+// ⚡ Bolt Optimization: Use a Set for SENSITIVE_KEYS to allow O(1) membership lookup
+// via .has() rather than linear O(n) array scanning via .includes().
+const SENSITIVE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
+
+/**
+ * 🛡️ Sentinel Security Enhancement:
+ * Sanitizes tokens loaded from storage to prevent prototype pollution and store tampering.
+ */
+function sanitizeTokens(loaded) {
+    const clean = Object.create(null);
+    if (!loaded || typeof loaded !== 'object') return clean;
+    const keys = Object.keys(loaded);
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (
+            typeof key === 'string' &&
+            key.length <= 100 &&
+            !SENSITIVE_KEYS.has(key) &&
+            SAFE_NAME_REGEX.test(key)
+        ) {
+            const val = loaded[key];
+            if (typeof val === 'number' && Number.isFinite(val)) {
+                clean[key] = val;
+            }
+        }
+    }
+    return clean;
+}
+
 /**
  * 🛡️ Sentinel Security Enhancement:
  * Use a null-prototype object to prevent prototype pollution and
  * unauthorized access to inherited properties (e.g., 'constructor').
  */
-let tokens = Object.assign(Object.create(null), loadTokens());
+let tokens = sanitizeTokens(loadTokens());
 
 /**
  * ⚡ Bolt Optimization:
@@ -44,11 +74,6 @@ function updateCache() {
 
 // Initial cache population
 updateCache();
-
-// ⚡ Bolt Optimization: Use a Set for SENSITIVE_KEYS to allow O(1) membership lookup
-// via .has() rather than linear O(n) array scanning via .includes().
-const SENSITIVE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-const SAFE_NAME_REGEX = /^[a-zA-Z0-9\s._-]+$/;
 
 function addToken(name, value) {
     if (typeof name !== 'string' || name.length > 100 || typeof value !== 'number' || !Number.isFinite(value)) {
@@ -156,4 +181,4 @@ function deleteToken(name) {
     }
 }
 
-module.exports = { addToken, getTokenValue, getAllTokens, getAllTokensArray, getAllTokensJSON, getAllTokensETag, updateToken, deleteToken };
+module.exports = { addToken, getTokenValue, getAllTokens, getAllTokensArray, getAllTokensJSON, getAllTokensETag, updateToken, deleteToken, sanitizeTokens };
