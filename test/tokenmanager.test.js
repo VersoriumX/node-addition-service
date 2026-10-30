@@ -1,6 +1,6 @@
 const { describe, it } = require('mocha');
 const { expect } = require('chai');
-const { addToken, getTokenValue, updateToken, deleteToken } = require('../src/tokenmanager');
+const { addToken, getTokenValue, updateToken, deleteToken, sanitizeTokens } = require('../src/tokenmanager');
 
 describe('Token Manager', () => {
     it('should add a token', () => {
@@ -62,5 +62,30 @@ describe('Token Manager', () => {
         expect(() => updateToken(12345, 100)).to.throw('Invalid token name');
         expect(() => deleteToken(longName)).to.throw('Invalid token name');
         expect(() => deleteToken(12345)).to.throw('Invalid token name');
+    });
+
+    it('should sanitize loaded tokens by filtering prototype pollution keys, invalid characters, oversized names, and non-finite values', () => {
+        const rawTokens = {
+            'ValidToken': 100,
+            '__proto__': 999,
+            'constructor': 888,
+            'prototype': 777,
+            '<script>xss</script>': 500,
+            ['a'.repeat(101)]: 300,
+            'NanValue': NaN,
+            'InfinityValue': Infinity,
+            'StringValue': '100'
+        };
+
+        const sanitized = sanitizeTokens(rawTokens);
+        expect(sanitized.ValidToken).to.equal(100);
+        expect(sanitized.__proto__).to.be.undefined;
+        expect(sanitized.constructor).to.be.undefined;
+        expect(sanitized.prototype).to.be.undefined;
+        expect(sanitized['<script>xss</script>']).to.be.undefined;
+        expect(sanitized['a'.repeat(101)]).to.be.undefined;
+        expect(sanitized.NanValue).to.be.undefined;
+        expect(sanitized.InfinityValue).to.be.undefined;
+        expect(sanitized.StringValue).to.be.undefined;
     });
 });
