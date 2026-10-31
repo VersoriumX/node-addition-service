@@ -52,7 +52,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware
 app.use('/api', rateLimiter); // Protect backend API endpoints
-app.use(express.json());
+// 🛡️ Sentinel Security Enhancement: Enforce strict request body size limit to prevent memory-exhaustion DoS
+app.use(express.json({ limit: '10kb' }));
 app.use(electricFence);
 
 // API for Tokens
@@ -170,6 +171,9 @@ app.use('/api', (req, res) => {
 // 🛡️ Sentinel Security Enhancement: Global error handling middleware.
 // Intercepts malformed payloads/syntax errors to avoid exposing internal stack traces.
 app.use((err, req, res, next) => {
+    if (err.type === 'entity.too.large') {
+        return res.status(413).json({ error: 'Payload too large' });
+    }
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
         return res.status(400).json({ error: 'Invalid JSON payload' });
     }
