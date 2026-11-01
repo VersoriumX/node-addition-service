@@ -233,5 +233,19 @@ describe('Static File Caching & Routes', () => {
             const data = await res.json();
             expect(data).to.have.property('error', 'Invalid JSON payload');
         });
+
+        it('should handle payload exceeding size limit and return 413 with a clean message', async () => {
+            const largeBody = JSON.stringify({ name: 'ValidName', padding: 'x'.repeat(12 * 1024) });
+            const res = await fetch(`${baseUrl}/api/tokens`, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: largeBody
+            });
+            expect(res.status).to.equal(413);
+            const data = await res.json();
+            expect(data).to.have.property('error', 'Payload too large');
+        });
     });
 });

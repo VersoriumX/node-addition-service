@@ -78,4 +78,19 @@ describe('Server.js Integration & Security Headers', () => {
         const data = await res.json();
         expect(data.error).to.contain('Invalid token name');
     });
+
+    it('should return HTTP 413 when JSON payload exceeds 10kb limit', async () => {
+        const largeBody = JSON.stringify({ name: 'ValidName', padding: 'x'.repeat(12 * 1024) });
+        const res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: largeBody
+        });
+
+        expect(res.status).to.equal(413);
+        const data = await res.json();
+        expect(data).to.have.property('error', 'Payload too large');
+    });
 });
