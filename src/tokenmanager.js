@@ -36,6 +36,10 @@ function updateCache() {
         const name = keys[i];
         arr[i] = { name, value: tokens[name] };
     }
+    // ⚡ Bolt Optimization: Unify array and JSON cache construction.
+    // Storing the pre-mapped array in tokensArrayCache directly avoids redundant
+    // re-iteration of Object.keys(tokens) and duplicate object allocations in getAllTokensArray().
+    tokensArrayCache = arr;
     tokensJSONCache = JSON.stringify(arr);
     // ⚡ Bolt Optimization: Pre-calculate ETag to avoid hashing on every request.
     // We use MD5 as it is fast and sufficient for ETag purposes.
@@ -80,18 +84,11 @@ function getAllTokens() {
 /**
  * ⚡ Bolt Optimization:
  * Returns the memory-cached array of tokens.
- * Now implements lazy loading and avoids Object.freeze for internal speed.
+ * Lazily calls updateCache() if the cache is invalidated, sharing the pre-constructed array
+ * with JSON serialization to eliminate duplicate loop iterations and object allocations.
  */
 function getAllTokensArray() {
-    if (tokensArrayCache === null) {
-        const keys = Object.keys(tokens);
-        const arr = new Array(keys.length);
-        for (let i = 0; i < keys.length; i++) {
-            const name = keys[i];
-            arr[i] = Object.freeze({ name, value: tokens[name] });
-        }
-        tokensArrayCache = Object.freeze(arr);
-    }
+    if (tokensArrayCache === null) updateCache();
     return tokensArrayCache;
 }
 
