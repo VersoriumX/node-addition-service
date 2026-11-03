@@ -77,3 +77,7 @@
 ## 2026-09-09 - Direct Array Construction vs Set Allocation for Micro Collections
 **Learning:** For small, fixed-size collections (such as generating variations of at most 7 strings), instantiating a `Set` object, calling `.add()` repeatedly, and converting back to an `Array` via `Array.from()` incurs significant object allocation, hash table setup, and iterator overhead.
 **Action:** Replace `Set` instantiation and `Array.from()` with direct array construction and linear inclusion checks (`!variations.includes(...)`) for micro collections. This eliminates iterator and object allocations, yielding ~33% faster execution.
+
+## 2026-09-16 - Single-Pass Property Lookup on Hot Object Access Paths
+**Learning:** In hot object lookup functions, ternary checks like `obj[key] !== undefined ? obj[key] : null` perform the hash/property table lookup twice for every existing key. On hot paths, storing `obj[key]` in a local variable avoids the duplicate lookup and dictionary traversal.
+**Action:** Always capture property access in a local variable (`const val = obj[key]`) before testing against `undefined` to eliminate redundant property lookups on hot paths.
