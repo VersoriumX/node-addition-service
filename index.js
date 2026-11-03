@@ -107,7 +107,8 @@ app.get('/isolation.json', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api', rateLimiter); // Apply Rate Limiter middleware to sensitive /api routes
-app.use(express.json());
+// 🛡️ Sentinel Security Enhancement: Limit JSON payload size to 10kb to mitigate DoS attacks.
+app.use(express.json({ limit: '10kb' }));
 app.use(electricFence); // Apply Electric Fence Security Middleware
 
 // Original legacy route
@@ -288,6 +289,9 @@ app.get('/api/fuzz', (req, res) => {
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
         return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+    if (err.type === 'entity.too.large' || err.status === 413) {
+        return res.status(413).json({ error: 'Payload too large' });
     }
     console.error('Unhandled server error:', err);
     res.status(500).json({ error: 'Internal server error' });
