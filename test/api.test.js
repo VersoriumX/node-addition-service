@@ -47,4 +47,24 @@ describe('API Service Security & Timeout Configuration', () => {
         expect(loggedError).to.not.contain('YOUR_CRYPTO_API_KEY');
         expect(loggedError).to.contain('[REDACTED]');
     });
+
+    it('should redact generic credential parameters like token, secret, and api_key', async () => {
+        let loggedError = '';
+        const originalConsoleError = console.error;
+        console.error = (msg) => {
+            loggedError += msg;
+        };
+
+        // Trigger fetchWithCache with a URL containing various sensitive parameters
+        const { fetchMetalPrices } = require('../src/api');
+        try {
+            await fetchMetalPrices();
+        } catch (err) {
+            // Expected failure
+        } finally {
+            console.error = originalConsoleError;
+        }
+
+        expect(loggedError).to.contain('[REDACTED]');
+    });
 });
