@@ -1,5 +1,7 @@
 // benchmark_fuzzer_compare.js
-// Compares fuzzer variations generation: Set instantiation vs direct array construction
+// Compares fuzzer variations generation and leet string transformation:
+// 1. RegExp with callback replace vs single-pass toLeet loop
+// 2. Original Set + Array.from allocation vs optimized generateVariations
 
 const { generateVariations } = require('../../src/fuzzer');
 
@@ -19,6 +21,25 @@ function reverseString(str) {
     return rev;
 }
 
+function toLeetRegex(str) {
+    return str.replace(LEET_REGEX, m => LEET_MAP[m]);
+}
+
+function toLeetLoop(str) {
+    let out = '';
+    for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        switch (ch) {
+            case 'e': case 'E': out += '3'; break;
+            case 'a': case 'A': out += '4'; break;
+            case 's': case 'S': out += '5'; break;
+            case 'o': case 'O': out += '0'; break;
+            default: out += ch; break;
+        }
+    }
+    return out;
+}
+
 function generateVariationsWithSet(baseString) {
     const variations = new Set();
     variations.add(baseString);
@@ -27,7 +48,7 @@ function generateVariationsWithSet(baseString) {
     variations.add(baseString + "123");
     variations.add(baseString + "!");
     variations.add(reverseString(baseString));
-    const leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+    const leet = toLeetRegex(baseString);
     variations.add(leet);
     return Array.from(variations);
 }
@@ -35,7 +56,40 @@ function generateVariationsWithSet(baseString) {
 const testInputs = ["hello", "The Quick Brown Fox!", "123", "admin_user_2025"];
 const iterations = 500000;
 
-console.log("--- Benchmarking generateVariations Allocation Optimization (500,000 iterations x 4 inputs) ---");
+console.log("--- 1. Benchmarking toLeet Transformation (500,000 iterations x 4 inputs) ---");
+
+// Warmup
+for (let i = 0; i < 5000; i++) {
+    for (const input of testInputs) {
+        toLeetRegex(input);
+        toLeetLoop(input);
+    }
+}
+
+const startRegex = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    for (const input of testInputs) {
+        toLeetRegex(input);
+    }
+}
+const endRegex = parseFloat(process.hrtime.bigint()) / 1e6;
+const regexTime = endRegex - startRegex;
+console.log(`RegExp .replace(LEET_REGEX, callback): ${regexTime.toFixed(4)}ms`);
+
+const startLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+for (let i = 0; i < iterations; i++) {
+    for (const input of testInputs) {
+        toLeetLoop(input);
+    }
+}
+const endLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+const loopTime = endLoop - startLoop;
+console.log(`Single-pass toLeet character loop:     ${loopTime.toFixed(4)}ms`);
+
+const leetSpeedup = ((regexTime - loopTime) / regexTime) * 100;
+console.log(`Leet transformation speedup:           ${leetSpeedup.toFixed(2)}% faster\n`);
+
+console.log("--- 2. Benchmarking Overall generateVariations (500,000 iterations x 4 inputs) ---");
 
 // Warmup
 for (let i = 0; i < 5000; i++) {
@@ -53,7 +107,7 @@ for (let i = 0; i < iterations; i++) {
 }
 const endSet = parseFloat(process.hrtime.bigint()) / 1e6;
 const setTime = endSet - startSet;
-console.log(`Original Set + Array.from Allocation: ${setTime.toFixed(4)}ms`);
+console.log(`Original Set + RegExp .replace:        ${setTime.toFixed(4)}ms`);
 
 const startArray = parseFloat(process.hrtime.bigint()) / 1e6;
 for (let i = 0; i < iterations; i++) {
@@ -63,7 +117,7 @@ for (let i = 0; i < iterations; i++) {
 }
 const endArray = parseFloat(process.hrtime.bigint()) / 1e6;
 const arrayTime = endArray - startArray;
-console.log(`Optimized Direct Array Construction: ${arrayTime.toFixed(4)}ms`);
+console.log(`Optimized Direct Array + toLeet loop:  ${arrayTime.toFixed(4)}ms`);
 
-const speedup = ((setTime - arrayTime) / setTime) * 100;
-console.log(`Estimated Performance Gain: ${speedup.toFixed(2)}% faster\n`);
+const totalSpeedup = ((setTime - arrayTime) / setTime) * 100;
+console.log(`Overall generateVariations speedup:    ${totalSpeedup.toFixed(2)}% faster\n`);
