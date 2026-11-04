@@ -43,8 +43,8 @@ async function fetchWithCache(url, cache, headers = {}) {
             cache.timestamp = Date.now();
             return cache;
         } catch (error) {
-            const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY)=[^&]+/g, '$1=[REDACTED]');
-            const redactedMsg = error && error.message ? error.message.replace(/(access_key|CMC_PRO_API_KEY)=[^&]+/g, '$1=[REDACTED]') : error;
+            const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY|api_key|key|token|secret|password)=[^&]+/gi, '$1=[REDACTED]');
+            const redactedMsg = error && error.message ? error.message.replace(/(access_key|CMC_PRO_API_KEY|api_key|key|token|secret|password)=[^&]+/gi, '$1=[REDACTED]') : error;
             console.error(`Error fetching from ${redactedUrl}: ${redactedMsg}`);
 
             if (cache.data) return cache;

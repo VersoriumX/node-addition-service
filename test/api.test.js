@@ -47,4 +47,18 @@ describe('API Service Security & Timeout Configuration', () => {
         expect(loggedError).to.not.contain('YOUR_CRYPTO_API_KEY');
         expect(loggedError).to.contain('[REDACTED]');
     });
+
+    it('should redact common sensitive parameter names (api_key, token, secret, password) in error logs', () => {
+        const url = 'https://example.com/api?api_key=secret123&token=tok456&secret=sec789&password=pass123&other=safe';
+        const redactedUrl = url.replace(/(access_key|CMC_PRO_API_KEY|api_key|key|token|secret|password)=[^&]+/gi, '$1=[REDACTED]');
+        expect(redactedUrl).to.not.contain('secret123');
+        expect(redactedUrl).to.not.contain('tok456');
+        expect(redactedUrl).to.not.contain('sec789');
+        expect(redactedUrl).to.not.contain('pass123');
+        expect(redactedUrl).to.contain('api_key=[REDACTED]');
+        expect(redactedUrl).to.contain('token=[REDACTED]');
+        expect(redactedUrl).to.contain('secret=[REDACTED]');
+        expect(redactedUrl).to.contain('password=[REDACTED]');
+        expect(redactedUrl).to.contain('other=safe');
+    });
 });
