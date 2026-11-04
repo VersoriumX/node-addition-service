@@ -1,5 +1,5 @@
 // benchmark_fuzzer_compare.js
-// Compares fuzzer variations generation: Set instantiation vs direct array construction
+// Compares fuzzer leet transformation and variations generation: RegExp replace vs direct switch-case loop
 
 const { generateVariations } = require('../../src/fuzzer');
 
@@ -19,51 +19,58 @@ function reverseString(str) {
     return rev;
 }
 
-function generateVariationsWithSet(baseString) {
-    const variations = new Set();
-    variations.add(baseString);
-    variations.add(baseString.toUpperCase());
-    variations.add(baseString.toLowerCase());
-    variations.add(baseString + "123");
-    variations.add(baseString + "!");
-    variations.add(reverseString(baseString));
-    const leet = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
-    variations.add(leet);
-    return Array.from(variations);
+function generateVariationsRegexLeet(baseString) {
+    const v1 = baseString;
+    const v2 = baseString.toUpperCase();
+    const v3 = baseString.toLowerCase();
+    const v4 = baseString + "123";
+    const v5 = baseString + "!";
+    const v6 = reverseString(baseString);
+    const v7 = baseString.replace(LEET_REGEX, m => LEET_MAP[m]);
+
+    const variations = [v1];
+    if (v2 !== v1) variations.push(v2);
+    if (v3 !== v1 && v3 !== v2) variations.push(v3);
+    if (!variations.includes(v4)) variations.push(v4);
+    if (!variations.includes(v5)) variations.push(v5);
+    if (!variations.includes(v6)) variations.push(v6);
+    if (!variations.includes(v7)) variations.push(v7);
+
+    return variations;
 }
 
 const testInputs = ["hello", "The Quick Brown Fox!", "123", "admin_user_2025"];
 const iterations = 500000;
 
-console.log("--- Benchmarking generateVariations Allocation Optimization (500,000 iterations x 4 inputs) ---");
+console.log("--- Benchmarking generateVariations Leet Transformation Optimization (500,000 iterations x 4 inputs) ---");
 
 // Warmup
 for (let i = 0; i < 5000; i++) {
     for (const input of testInputs) {
-        generateVariationsWithSet(input);
+        generateVariationsRegexLeet(input);
         generateVariations(input);
     }
 }
 
-const startSet = parseFloat(process.hrtime.bigint()) / 1e6;
+const startRegex = parseFloat(process.hrtime.bigint()) / 1e6;
 for (let i = 0; i < iterations; i++) {
     for (const input of testInputs) {
-        generateVariationsWithSet(input);
+        generateVariationsRegexLeet(input);
     }
 }
-const endSet = parseFloat(process.hrtime.bigint()) / 1e6;
-const setTime = endSet - startSet;
-console.log(`Original Set + Array.from Allocation: ${setTime.toFixed(4)}ms`);
+const endRegex = parseFloat(process.hrtime.bigint()) / 1e6;
+const regexTime = endRegex - startRegex;
+console.log(`Original RegExp .replace(): ${regexTime.toFixed(4)}ms`);
 
-const startArray = parseFloat(process.hrtime.bigint()) / 1e6;
+const startLoop = parseFloat(process.hrtime.bigint()) / 1e6;
 for (let i = 0; i < iterations; i++) {
     for (const input of testInputs) {
         generateVariations(input);
     }
 }
-const endArray = parseFloat(process.hrtime.bigint()) / 1e6;
-const arrayTime = endArray - startArray;
-console.log(`Optimized Direct Array Construction: ${arrayTime.toFixed(4)}ms`);
+const endLoop = parseFloat(process.hrtime.bigint()) / 1e6;
+const loopTime = endLoop - startLoop;
+console.log(`Optimized Switch-Case Loop: ${loopTime.toFixed(4)}ms`);
 
-const speedup = ((setTime - arrayTime) / setTime) * 100;
+const speedup = ((regexTime - loopTime) / regexTime) * 100;
 console.log(`Estimated Performance Gain: ${speedup.toFixed(2)}% faster\n`);
