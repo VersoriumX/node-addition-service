@@ -77,3 +77,7 @@
 ## 2026-09-09 - Direct Array Construction vs Set Allocation for Micro Collections
 **Learning:** For small, fixed-size collections (such as generating variations of at most 7 strings), instantiating a `Set` object, calling `.add()` repeatedly, and converting back to an `Array` via `Array.from()` incurs significant object allocation, hash table setup, and iterator overhead.
 **Action:** Replace `Set` instantiation and `Array.from()` with direct array construction and linear inclusion checks (`!variations.includes(...)`) for micro collections. This eliminates iterator and object allocations, yielding ~33% faster execution.
+
+## 2026-09-16 - Closure Hoisting & Fast Regex Test for String Transformers
+**Learning:** In string transformation functions (such as fuzzer variation generators), using `.replace()` with an inline arrow function closure allocates a new function object on every invocation. Additionally, executing `.replace()` blindly without checking if the string contains target characters forces the RegExp engine to process strings even when no substitutions will occur.
+**Action:** Hoist replacer callbacks to module scope to eliminate closure allocations per call. Pre-test strings with a lightweight non-global regex (`/[pattern]/i.test(str)`) before calling `.replace()` to bypass regex string transformation entirely for non-matching inputs.
