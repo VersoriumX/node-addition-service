@@ -51,6 +51,26 @@ describe('Server.js Integration & Security Headers', () => {
         expect(data).to.have.property('error', 'Invalid JSON payload');
     });
 
+    it('should reject payloads exceeding 10kb body limit with HTTP 413 without leaking stack traces', async () => {
+        const largePayload = JSON.stringify({
+            name: 'largeToken',
+            value: 100,
+            padding: 'a'.repeat(12 * 1024)
+        });
+
+        const res = await fetch(`${baseUrl}/api/tokens`, {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: largePayload
+        });
+
+        expect(res.status).to.equal(413);
+        const data = await res.json();
+        expect(data).to.have.property('error', 'Payload too large');
+    });
+
     it('should handle empty JSON body payloads gracefully and return HTTP 400', async () => {
         const res = await fetch(`${baseUrl}/api/tokens`, {
             method: 'POST',
